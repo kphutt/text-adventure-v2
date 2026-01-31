@@ -11,25 +11,40 @@ func TestMovement(t *testing.T) {
 		t.Errorf("Expected player to start in Room B, but in %s", game.Player.Location.Name)
 	}
 
-	// Test valid movement
+	// Test valid movement (go west)
 	game.HandleCommand("go west")
 	if game.Player.Location.Name != "Room A" {
 		t.Errorf("Expected player to be in Room A, but in %s", game.Player.Location.Name)
 	}
 
-	// Test invalid movement
+	// Test moving back (go east)
+	game.HandleCommand("go east")
+	if game.Player.Location.Name != "Room B" {
+		t.Errorf("Expected player to move back to Room B, but in %s", game.Player.Location.Name)
+	}
+
+	// Test invalid typed movement
 	msg, _ := game.HandleCommand("go north")
 	if !strings.Contains(msg, "You can't go that way.") {
 		t.Errorf("Expected 'You can't go that way.', but got '%s'", msg)
 	}
-	if game.Player.Location.Name != "Room A" {
-		t.Errorf("Expected player to still be in Room A, but in %s", game.Player.Location.Name)
+	if game.Player.Location.Name != "Room B" {
+		t.Errorf("Expected player to still be in Room B, but in %s", game.Player.Location.Name)
 	}
 
 	// Test WASD movement
-	game.HandleCommand("d") // 'd' is east in this layout
-	if game.Player.Location.Name != "Room B" {
-		t.Errorf("Expected player to be in Room B, but in %s", game.Player.Location.Name)
+	game.HandleCommand("d") // 'd' is east to Room C
+	if game.Player.Location.Name != "Room C" {
+		t.Errorf("Expected player to be in Room C, but in %s", game.Player.Location.Name)
+	}
+
+	// Test invalid single-letter command
+	msg, _ = game.HandleCommand("x")
+	if !strings.Contains(msg, "I don't understand that command.") {
+		t.Errorf("Expected 'I don't understand that command.', but got '%s'", msg)
+	}
+	if game.Player.Location.Name != "Room C" {
+		t.Errorf("Expected player to still be in Room C, but in %s", game.Player.Location.Name)
 	}
 }
 
@@ -50,10 +65,18 @@ func TestLook(t *testing.T) {
 
 func TestTakeAndDrop(t *testing.T) {
 	game := createLayoutWithItems()
-	game.Player.Location = game.AllRooms["Room A"] // Move player to the room with the item
+
+	// Test taking from an empty room using the 'e' shortcut
+	msg, _ := game.HandleCommand("e")
+	if !strings.Contains(msg, "There is nothing to take.") {
+		t.Errorf("Expected 'There is nothing to take', but got '%s'", msg)
+	}
+
+	// Move player to the room with the item
+	game.Player.Location = game.AllRooms["Room A"] 
 
 	// Test taking an item that exists
-	msg, _ := game.HandleCommand("take test_item")
+	msg, _ = game.HandleCommand("take test_item")
 	if !strings.Contains(msg, "You took the test_item.") {
 		t.Errorf("Expected 'You took the test_item', but got '%s'", msg)
 	}
@@ -70,7 +93,13 @@ func TestTakeAndDrop(t *testing.T) {
 		t.Errorf("Expected 'You don't see that here', but got '%s'", msg)
 	}
 
-	// Test dropping an item
+	// Test dropping an un-held item
+	msg, _ = game.HandleCommand("drop key")
+	if !strings.Contains(msg, "You don't have that.") {
+		t.Errorf("Expected 'You don't have that', but got '%s'", msg)
+	}
+
+	// Test dropping a held item
 	msg, _ = game.HandleCommand("drop test_item")
 	if !strings.Contains(msg, "You dropped the test_item.") {
 		t.Errorf("Expected 'You dropped the test_item', but got '%s'", msg)
@@ -99,10 +128,18 @@ func TestInventory(t *testing.T) {
 }
 
 func TestUnlock(t *testing.T) {
+	// Test unlocking in a room with no locked doors
+	gameNoLock := createSimpleLayout()
+	msg, _ := gameNoLock.HandleCommand("unlock")
+	if !strings.Contains(msg, "There is nothing to unlock here.") {
+		t.Errorf("Expected 'There is nothing to unlock here.', but got '%s'", msg)
+	}
+
+	// Test the full unlock sequence
 	game := createLayoutWithLock()
 
 	// Try to unlock without key
-	msg, _ := game.HandleCommand("u")
+	msg, _ = game.HandleCommand("u")
 	if !strings.Contains(msg, "You don't have the key.") {
 		t.Errorf("Expected 'You don't have the key', but got '%s'", msg)
 	}

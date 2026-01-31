@@ -159,6 +159,20 @@ func (g *Game) Drop(itemName string) string {
 
 // Unlock unlocks a door.
 func (g *Game) Unlock() (string, bool) {
+	var lockedExit *world.Exit
+	for _, exit := range g.Player.Location.Exits {
+		if exit.Locked {
+			lockedExit = exit
+			break
+		}
+	}
+
+	// First, check if there's anything to unlock
+	if lockedExit == nil {
+		return "There is nothing to unlock here.", false
+	}
+
+	// Now check if the player has the key
 	hasKey := false
 	for _, item := range g.Player.Inventory {
 		if item.Name == "key" {
@@ -171,18 +185,13 @@ func (g *Game) Unlock() (string, bool) {
 		return "You don't have the key.", false
 	}
 
-	for _, exit := range g.Player.Location.Exits {
-		if exit.Locked {
-			exit.Locked = false
-			// Check if the unlocked room is the treasure room
-			if exit.Room.Name == "Treasure Room" {
-				g.IsWon = true
-				return "You unlocked the door! You win!", true
-			}
-			return "You unlocked the door.", false
-		}
+	// If we've reached here, unlock the door
+	lockedExit.Locked = false
+	// Check if the unlocked room is the treasure room
+	if lockedExit.Room.Name == "Treasure Room" {
+		g.IsWon = true
+		return "You unlocked the door! You win!", true
 	}
-
-	return "There is nothing to unlock here.", false
+	return "You unlocked the door.", false
 }
 
