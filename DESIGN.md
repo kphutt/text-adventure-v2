@@ -73,48 +73,71 @@ To achieve procedural map generation, we've introduced a new, self-contained `ge
 
 ```mermaid
 graph TD
-    subgraph "End-User"
-        User["User"]
-    end
-
-    subgraph "System: Text Adventure Game"
-        main.go["Main Application<br>(main.go)"]
-        GameEngine["Game Engine<br>(game package)"]
-        WorldFactory["World Factory<br>(generator package)"]
-        SharedData["Shared Data Models<br>(world package)"]
-    end
-
-    subgraph "World Factory Components"
+    %% --- Legend ---
+    subgraph "Legend"
         direction LR
-        Generator["Generator<br><i>Orchestrator</i><br>(generator.go)"]
-        Builder["World Builder<br><i>Room Layout</i><br>(builder.go)"]
-        Puzzler["Puzzle Placer<br><i>Items & Locks</i><br>(puzzler.go)"]
-        Validator["World Validator<br><i>Solvability Check</i><br>(validator.go)"]
+        L1(Presentation Layer)
+        L2(Application Layer)
+        L3(Service Layer)
+        L4(Data Layer)
+    end
+    style L1 fill:#fff,stroke:#007bff,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style L2 fill:#fff,stroke:#17a2b8,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style L3 fill:#fff,stroke:#28a745,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style L4 fill:#fff,stroke:#dc3545,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+
+    %% --- Component Styles ---
+    style TUI fill:#fff,stroke:#007bff,stroke-width:2px,color:#000
+    style GameEngine fill:#fff,stroke:#17a2b8,stroke-width:2px,color:#000
+    style GeneratorService fill:#fff,stroke:#28a745,stroke-width:2px,color:#000
+    style Models fill:#fff,stroke:#dc3545,stroke-width:2px,color:#000
+    style Orchestrator fill:#fff,stroke:#333,stroke-width:1px,color:#000 %% Internal orchestrator
+    style Builder fill:#fff,stroke:#333,stroke-width:1px,color:#000
+    style Puzzler fill:#fff,stroke:#333,stroke-width:1px,color:#000
+    style Validator fill:#fff,stroke:#333,stroke-width:1px,color:#000
+
+
+    %% --- Architecture ---
+    User["👤 User"]
+
+    subgraph "Presentation Layer"
+        TUI["TUI Frontend<br>(main.go)"]
     end
 
-    %% --- High-Level Flow ---
-    User -- "Starts Game" --> main.go
-    main.go -- "Initializes" --> GameEngine
-    GameEngine -- "Requests New World" --> WorldFactory
-    WorldFactory -- "Returns Start Room" --> GameEngine
-    GameEngine -- "Returns Feedback (string)" --> main.go
-    main.go -- "Renders UI" --> User
+    subgraph "Application Layer"
+        GameEngine["Game Engine<br>(game package)"]
+    end
 
-    %% --- Core Logic Dependencies ---
-    WorldFactory -- "Uses" --> SharedData
-    GameEngine -- "Uses" --> SharedData
+    subgraph "Service Layer"
+        GeneratorService["World Generator<br>(generator package)"]
+    end
 
-    Generator -- "Orchestrates" --> Builder
-    Generator -- "Orchestrates" --> Puzzler
-    Generator -- "Orchestrates" --> Validator
+    subgraph "Data Layer"
+        Models["Shared World Models<br>(world package)"]
+    end
 
-    Builder -- "Creates Rooms & Exits" --> SharedData
-    Puzzler -- "Places Items & Locks" --> SharedData
-    Validator -- "Verifies Solvability" --> SharedData
+    %% --- Primary User Flow & Data Flow ---
+    User -->|Inputs Commands| TUI
+    TUI -->|Renders UI| User
+    TUI -->|Invokes Commands| GameEngine
+    GameEngine -->|Returns Output String| TUI
+    GameEngine -->|Requests New World| GeneratorService
+    GeneratorService -->|Returns Solvable World| GameEngine
 
-    GameEngine -- "Manages Player, Inventory,<br>Moves, Commands" --> SharedData
-    GameEngine -- "Gets Map String" --> SharedData
+    %% --- Core Architectural Dependencies ---
+    GameEngine -->|Depends On| Models
+    GeneratorService -->|Depends On| Models
 
+    %% --- Internal Details of Generator Service ---
+    subgraph " "
+      GeneratorService -- Manages --> Orchestrator["Generate() Orchestrator"]
+      subgraph "Generation Steps"
+        direction TB
+        Orchestrator --> Builder["1. Build Layout"]
+        Builder --> Puzzler["2. Place Puzzle"]
+        Puzzler --> Validator["3. Validate World"]
+      end
+    end
 ```
 
 ### `generator` Package Components:
