@@ -29,6 +29,7 @@ func main() {
 
 	for {
 		screen.Clear()
+
 		y := 0
 
 		helpMessage, _ := g.HandleCommand("help")
@@ -57,15 +58,34 @@ func main() {
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
-			var shouldExit bool
+			var shouldExit bool // This should be defined once
+			var command string
+
 			switch ev.Key() {
 			case tcell.KeyEscape:
 				return
 			case tcell.KeyEnter:
-				message, shouldExit = g.HandleCommand(inputStr)
+				command = inputStr
+				inputStr = ""
+			case tcell.KeyBackspace, tcell.KeyBackspace2:
+				if len(inputStr) > 0 {
+					inputStr = inputStr[:len(inputStr)-1]
+				}
+			case tcell.KeyRune:
+				// Only if not a special command (w,a,s,d,e,i,u,h,q)
+				switch ev.Rune() {
+				case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
+					command = string(ev.Rune())
+				default:
+					inputStr += string(ev.Rune())
+				}
+			}
+
+			if command != "" { // Process command if one was entered
+				message, shouldExit = g.HandleCommand(command)
 				if shouldExit {
 					screen.Clear()
-					drawText(screen, 0, 0, tcell.StyleDefault, message)
+					drawText(screen, 0, 0, tcell.StyleDefault, message) // Use the message from g.HandleCommand
 					drawText(screen, 0, 1, tcell.StyleDefault, "Press any key to exit.")
 					screen.Show()
 					// wait for any key press
@@ -75,32 +95,6 @@ func main() {
 							return
 						}
 					}
-				}
-				inputStr = ""
-			case tcell.KeyBackspace, tcell.KeyBackspace2:
-				if len(inputStr) > 0 {
-					inputStr = inputStr[:len(inputStr)-1]
-				}
-			case tcell.KeyRune:
-				var shouldExit bool
-				switch ev.Rune() {
-				case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
-					message, shouldExit = g.HandleCommand(string(ev.Rune()))
-					if shouldExit {
-						screen.Clear()
-						drawText(screen, 0, 0, tcell.StyleDefault, message)
-						drawText(screen, 0, 1, tcell.StyleDefault, "Press any key to exit.")
-						screen.Show()
-						// wait for any key press
-						for {
-							ev := screen.PollEvent()
-							if _, ok := ev.(*tcell.EventKey); ok {
-								return
-							}
-						}
-					}
-				default:
-					inputStr += string(ev.Rune())
 				}
 			}
 		}

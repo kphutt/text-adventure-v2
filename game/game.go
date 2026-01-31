@@ -5,12 +5,6 @@ import (
 	"strings"
 )
 
-// Game holds the entire state of the game.
-type Game struct {
-	Player   *Player
-	AllRooms map[string]*Room
-}
-
 // NewGame creates a new game instance.
 func NewGame() *Game {
 	startRoom := CreateWorld()
@@ -26,6 +20,7 @@ func NewGame() *Game {
 	return &Game{
 		Player:   player,
 		AllRooms: allRooms,
+		IsWon:    false,
 	}
 }
 
@@ -160,6 +155,7 @@ func (g *Game) Unlock() (string, bool) {
 			for _, item := range g.Player.Inventory {
 				if item.Name == "key" {
 					exit.Locked = false
+					g.IsWon = true
 					return "You unlocked the door! You win!", true
 				}
 			}
