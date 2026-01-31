@@ -1,30 +1,62 @@
 ```mermaid
-C4Context
-    title Text Adventure Game Architecture
+graph TD
+    %% Define main actors and systems
+    subgraph User
+        Player[Player]
+    end
 
-    Person(player, "Player", "The person playing the text adventure game.")
-    System(game_cli, "Text Adventure CLI", "The command-line interface application written in Go.")
+    subgraph "Application: text-adventure-v2"
+        direction TB
+        MainApp["main.go<br><b>(View/Controller)</b>"]
+        GameCore["Game Package<br><b>(Model)</b>"]
+    end
 
-    Rel(player, game_cli, "Uses")
+    subgraph "Game Package Details"
+        direction LR
+        GameStruct[<b>game.go</b><br>Game State & Logic]
+        Structs[<b>structs.go</b><br>Data Structures]
+        World[<b>world.go</b><br>World Definition]
+        Parser[<b>parser.go</b><br>Input Parser]
+        MapGen[<b>map.go</b><br>Map Generator]
+    end
 
-    Container(main_package, "Main Package (text-adventure-v2)", "Go executable", "Handles UI rendering with Tcell and user input, orchestrates game flow.")
-    Container(game_package, "Game Package (game)", "Go package", "Contains all core game logic, data structures, and state management.")
+    %% --- Connections ---
+    Player -- "Types commands" --> MainApp
+    MainApp -- "Initializes & Interacts" --> GameCore
+    GameCore -- "Comprises" --> GameStruct
+    GameCore -- "Comprises" --> Structs
+    GameCore -- "Comprises" --> World
+    GameCore -- "Comprises" --> Parser
+    GameCore -- "Comprises" --> MapGen
 
-    Rel(game_cli, main_package, "Executes")
-    Rel(main_package, game_package, "Instantiates and interacts with", "Calls methods on Game struct, receives state updates")
+    MainApp -- "Calls methods on" --> GameStruct
+    GameStruct -- "Returns output" --> MainApp
 
-    Boundary(game_package_boundary, "Game Package Components") {
-        Component(structs_go, "structs.go", "Go File", "Defines core game data structures: Item, Room, Exit, Player.")
-        Component(world_go, "world.go", "Go File", "Initializes the game world, creates rooms and connections.")
-        Component(game_go, "game.go", "Go File", "Encapsulates Game state and core logic (HandleCommand, Look, Move, Take, Drop, Unlock, Inventory).")
-        Component(parser_go, "parser.go", "Go File", "Parses raw string input into verb and noun.")
-        Component(map_go, "map.go", "Go File", "Generates string representation of the world map.")
+    GameStruct --> Structs
+    GameStruct --> World
+    GameStruct --> Parser
+    GameStruct --> MapGen
 
-        Rel(game_go, structs_go, "Uses", "Player, Room, Item, Exit definitions")
-        Rel(game_go, world_go, "Uses", "CreateWorld to initialize game state")
-        Rel(game_go, parser_go, "Uses", "ParseInput for command processing")
-        Rel(game_go, map_go, "Uses", "GetMapString to visualize game world")
-    }
+    %% --- Styling for clarity ---
+    classDef actor fill:#ADD8E6,stroke:#000,stroke-width:2px,font-weight:bold;
+    classDef container fill:#FFFF99,stroke:#333,stroke-width:2px,font-weight:bold;
+    classDef package fill:#B0E0E6,stroke:#333,stroke-width:2px,font-weight:bold;
+    classDef component fill:#E6E6FA,stroke:#333,stroke-width:1px,font-weight:bold;
 
-    Rel(main_package, game_go, "Calls methods on", "HandleCommand, Look, GetMapString etc.")
+    class Player actor;
+    class MainApp container;
+    class GameCore package;
+    class GameStruct,Structs,World,Parser,MapGen component;
+
+    linkStyle 0 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 1 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 2 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 3 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 4 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 5 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 6 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 7 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 8 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 9 stroke-width:2px,fill:none,stroke:#000;
+    linkStyle 10 stroke-width:2px,fill:none,stroke:#000;
 ```
