@@ -1,0 +1,12 @@
+# Set default behavior, in case users don't have core.autocrlf set.
+* text=auto
+
+# Force all .go files to use Unix-style LF endings.
+*.go text eol=lf
+
+# Force other common text files to use LF endings.
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+LICENSE text eol=lf
