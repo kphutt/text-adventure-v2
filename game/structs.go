@@ -1,0 +1,29 @@
+package game
+
+// Item represents an object that can be picked up and dropped.
+type Item struct {
+	Name        string
+	Description string
+}
+
+// Exit represents a connection from one room to another.
+type Exit struct {
+	Room   *Room
+	Locked bool
+}
+
+// Room represents a location in the game world.
+type Room struct {
+	Name        string
+	Description string
+	Exits       map[string]*Exit
+	Items       []*Item
+	X, Y        int
+}
+
+// Player represents the user in the game.
+type Player struct {
+	Name      string
+	Location  *Room
+	Inventory []*Item
+}
