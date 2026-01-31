@@ -5,6 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"text-adventure-v2/game"
+	"text-adventure-v2/renderer"
 )
 
 func drawText(s tcell.Screen, x, y int, style tcell.Style, text string) {
@@ -39,7 +40,15 @@ func main() {
 		}
 
 		y++
-		for _, line := range strings.Split(g.GetMapString(), "\n") {
+		
+		// Create the view model for the renderer
+		mapView := renderer.MapView{
+			AllRooms:       g.AllRooms,
+			PlayerLocation: g.Player.Location,
+		}
+		mapString := renderer.RenderMap(mapView)
+
+		for _, line := range strings.Split(mapString, "\n") {
 			drawText(screen, 0, y, tcell.StyleDefault, line)
 			y++
 		}

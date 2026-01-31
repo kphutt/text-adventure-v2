@@ -1,13 +1,21 @@
-package game
+package renderer
 
 import (
 	"strings"
+	"text-adventure-v2/world"
 )
 
-// GetMapString generates a string representation of the world map.
-func (g *Game) GetMapString() string {
+// MapView contains all the necessary data for the renderer to draw the map.
+// It acts as a decoupled view model for the rendering engine.
+type MapView struct {
+	AllRooms       map[string]*world.Room
+	PlayerLocation *world.Room
+}
+
+// RenderMap takes a MapView and produces an ASCII string representation of the map.
+func RenderMap(view MapView) string {
 	minX, minY, maxX, maxY := 0, 0, 0, 0
-	for _, room := range g.AllRooms {
+	for _, room := range view.AllRooms {
 		if room.X < minX {
 			minX = room.X
 		}
@@ -26,9 +34,9 @@ func (g *Game) GetMapString() string {
 	for y := minY; y <= maxY; y++ {
 		for x := minX; x <= maxX; x++ {
 			isRoom := false
-			for _, room := range g.AllRooms {
+			for _, room := range view.AllRooms {
 				if room.X == x && room.Y == y {
-					if g.Player.Location == room {
+					if view.PlayerLocation == room {
 						b.WriteString("[@]")
 					} else {
 						b.WriteString("[ ]")

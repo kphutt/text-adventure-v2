@@ -111,10 +111,11 @@ graph TD
     %% --- Data Flow & Dependencies ---
     User -->|Inputs Commands| TUI
     TUI -->|Renders UI| User
-    TUI -->|Invokes Commands| GameEngine
-    GameEngine -->|Returns Output String| TUI
     
-    TUI -->|Passes Game State| Renderer
+    TUI -->|Invokes Commands| GameEngine
+    GameEngine -->|Returns Output| TUI
+    
+    TUI -->|Creates & Passes ViewModel| Renderer
     Renderer -->|Returns Map String| TUI
     
     GameEngine -->|Requests New World| GeneratorService
