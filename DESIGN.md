@@ -76,68 +76,53 @@ graph TD
     %% --- Legend ---
     subgraph "Legend"
         direction LR
-        L1(Presentation Layer)
-        L2(Application Layer)
-        L3(Service Layer)
-        L4(Data Layer)
+        L1(Presentation Layer); L2(Application Layer); L3(Service Layer); L4(Data Layer)
     end
     style L1 fill:#fff,stroke:#007bff,stroke-width:2px,stroke-dasharray: 5 5,color:#000
     style L2 fill:#fff,stroke:#17a2b8,stroke-width:2px,stroke-dasharray: 5 5,color:#000
     style L3 fill:#fff,stroke:#28a745,stroke-width:2px,stroke-dasharray: 5 5,color:#000
     style L4 fill:#fff,stroke:#dc3545,stroke-width:2px,stroke-dasharray: 5 5,color:#000
 
-    %% --- Component Styles ---
-    style TUI fill:#fff,stroke:#007bff,stroke-width:2px,color:#000
-    style GameEngine fill:#fff,stroke:#17a2b8,stroke-width:2px,color:#000
-    style GeneratorService fill:#fff,stroke:#28a745,stroke-width:2px,color:#000
-    style Models fill:#fff,stroke:#dc3545,stroke-width:2px,color:#000
-    style Orchestrator fill:#fff,stroke:#333,stroke-width:1px,color:#000 %% Internal orchestrator
-    style Builder fill:#fff,stroke:#333,stroke-width:1px,color:#000
-    style Puzzler fill:#fff,stroke:#333,stroke-width:1px,color:#000
-    style Validator fill:#fff,stroke:#333,stroke-width:1px,color:#000
-
-
     %% --- Architecture ---
     User["👤 User"]
 
     subgraph "Presentation Layer"
+        style TUI fill:#fff,stroke:#007bff,stroke-width:2px,color:#000
+        style Renderer fill:#fff,stroke:#007bff,stroke-width:2px,color:#000
         TUI["TUI Frontend<br>(main.go)"]
+        Renderer["Map Renderer<br>(renderer package)"]
     end
 
     subgraph "Application Layer"
+        style GameEngine fill:#fff,stroke:#17a2b8,stroke-width:2px,color:#000
         GameEngine["Game Engine<br>(game package)"]
     end
 
     subgraph "Service Layer"
+        style GeneratorService fill:#fff,stroke:#28a745,stroke-width:2px,color:#000
         GeneratorService["World Generator<br>(generator package)"]
     end
 
     subgraph "Data Layer"
+        style Models fill:#fff,stroke:#dc3545,stroke-width:2px,color:#000
         Models["Shared World Models<br>(world package)"]
     end
-
-    %% --- Primary User Flow & Data Flow ---
+    
+    %% --- Data Flow & Dependencies ---
     User -->|Inputs Commands| TUI
     TUI -->|Renders UI| User
     TUI -->|Invokes Commands| GameEngine
     GameEngine -->|Returns Output String| TUI
+    
+    TUI -->|Passes Game State| Renderer
+    Renderer -->|Returns Map String| TUI
+    
     GameEngine -->|Requests New World| GeneratorService
     GeneratorService -->|Returns Solvable World| GameEngine
 
-    %% --- Core Architectural Dependencies ---
+    Renderer -->|Depends On| Models
     GameEngine -->|Depends On| Models
     GeneratorService -->|Depends On| Models
-
-    %% --- Internal Details of Generator Service ---
-    subgraph " "
-      GeneratorService -- Manages --> Orchestrator["Generate() Orchestrator"]
-      subgraph "Generation Steps"
-        direction TB
-        Orchestrator --> Builder["1. Build Layout"]
-        Builder --> Puzzler["2. Place Puzzle"]
-        Puzzler --> Validator["3. Validate World"]
-      end
-    end
 ```
 
 ### `generator` Package Components:
