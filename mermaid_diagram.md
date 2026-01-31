@@ -1,38 +1,35 @@
 ```mermaid
 graph TD
-    subgraph User
-        Player["Player"]
+    subgraph "End-User"
+        User["User"]
     end
 
-    subgraph "Application: text-adventure-v2"
-        direction TB
-        MainApp["main.go<br/>(View/Controller)"]
-        GameCore["Game Package<br/>(Model)"]
+    subgraph "System: Text Adventure Game"
+        UI["UI Layer<br>(main.go)"]
+        CoreLogic["Core Logic<br>(game package)"]
     end
 
-    subgraph "Game Package Details"
+    subgraph "Core Logic Components"
         direction LR
-        GameStruct["game.go<br/>Game State & Logic"]
-        Structs["structs.go<br/>Data Structures"]
-        World["world.go<br/>World Definition"]
-        Parser["parser.go<br/>Input Parser"]
-        MapGen["map.go<br/>Map Generator"]
+        Engine["Game Engine<br><i>State & Rules</i>"]
+        Models["Data Models<br><i>Room, Player, Item</i>"]
+        WorldData["World Data<br><i>Room Layout & Items</i>"]
+        Parser["Command Parser"]
     end
 
-    %% --- Connections ---
-    Player -- "Types commands" --> MainApp
-    MainApp -- "Initializes & Interacts" --> GameCore
-    GameCore -- "Comprises" --> GameStruct
-    GameCore -- "Comprises" --> Structs
-    GameCore -- "Comprises" --> World
-    GameCore -- "Comprises" --> Parser
-    GameCore -- "Comprises" --> MapGen
+    %% --- High-Level Flow ---
+    User -- "Inputs Commands" --> UI
+    UI -- "Invokes" --> Engine
+    Engine -- "Returns Feedback (string)" --> UI
 
-    MainApp -- "Calls methods on" --> GameStruct
-    GameStruct -- "Returns output" --> MainApp
+    %% --- Core Logic Dependencies ---
+    CoreLogic -- "Contains" --> Engine
+    CoreLogic -- "Contains" --> Models
+    CoreLogic -- "Contains" --> WorldData
+    CoreLogic -- "Contains" --> Parser
 
-    GameStruct --> Structs
-    GameStruct --> World
-    GameStruct --> Parser
-    GameStruct --> MapGen
+    Engine -- "Uses" --> Models
+    Engine -- "Uses" --> WorldData
+    Engine -- "Uses" --> Parser
+
 ```
