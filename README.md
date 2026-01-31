@@ -1,5 +1,8 @@
 # Go Text Adventure Game
 
+[![Go Version](https://img.shields.io/badge/go-1.25-blue.svg)](https://golang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A simple, terminal-based text adventure game written in Go, now featuring procedurally generated and unique worlds for endless replayability!
 
 ## Key Features
