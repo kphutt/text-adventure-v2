@@ -13,7 +13,8 @@ This is a simple text-based adventure game written in Go.
     *   You can also type `go [direction]` (e.g., `go north`).
 3.  **Interact with the world:**
     *   `look` or `l`: Look around the room to see the description, items, and exits.
-    *   `take [item]` or `e`: Pick up an item. If you just type `e`, you will pick up the first item in the room.
+    *   `take [item name]`: Pick up a specific item from the room.
+    *   `e`: A shortcut to take the first available item in the room.
     *   `drop [item]`: Drop an item from your inventory into the room.
     *   `inventory` or `i`: View your inventory.
     *   `unlock` or `u`: Unlock a door.

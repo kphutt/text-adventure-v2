@@ -47,7 +47,7 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 	case "quit", "q":
 		return "Goodbye!", true
 	case "help", "h":
-		return "Commands:\n- go [direction] (w,a,s,d)\n- look (l)\n- take [item] (e)\n- drop [item]\n- inventory (i)\n- unlock (u)\n- quit (q)", false
+		return "Commands:\n- go [direction] (w,a,s,d)\n- look (l)\n- take [item]\n- e (take first item)\n- drop [item]\n- inventory (i)\n- unlock (u)\n- quit (q)", false
 	case "look", "l":
 		return g.Look(), false
 	case "inventory", "i":
@@ -60,8 +60,13 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 			dir = map[string]string{"w": "north", "a": "west", "s": "south", "d": "east"}[verb]
 		}
 		return g.Move(dir)
-	case "take", "e":
+	case "take":
 		return g.Take(noun), false
+	case "e":
+		if len(g.Player.Location.Items) > 0 {
+			return g.Take(g.Player.Location.Items[0].Name), false
+		}
+		return "There is nothing to take.", false
 	case "drop":
 		return g.Drop(noun), false
 	case "unlock", "u":
