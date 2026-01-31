@@ -6,40 +6,41 @@ import (
 )
 
 func TestMovement(t *testing.T) {
-	game := NewGame()
-	if game.Player.Location.Name != "Hall" {
-		t.Errorf("Expected player to start in Hall, but in %s", game.Player.Location.Name)
+	game := createSimpleLayout()
+	if game.Player.Location.Name != "Room B" {
+		t.Errorf("Expected player to start in Room B, but in %s", game.Player.Location.Name)
 	}
 
 	// Test valid movement
-	game.HandleCommand("go north")
-	if game.Player.Location.Name != "Dungeon" {
-		t.Errorf("Expected player to be in Dungeon, but in %s", game.Player.Location.Name)
+	game.HandleCommand("go west")
+	if game.Player.Location.Name != "Room A" {
+		t.Errorf("Expected player to be in Room A, but in %s", game.Player.Location.Name)
 	}
 
 	// Test invalid movement
 	msg, _ := game.HandleCommand("go north")
-	if !strings.Contains(msg, "The door is locked.") {
-		t.Errorf("Expected 'The door is locked', but got '%s'", msg)
+	if !strings.Contains(msg, "You can't go that way.") {
+		t.Errorf("Expected 'You can't go that way.', but got '%s'", msg)
 	}
-	if game.Player.Location.Name != "Dungeon" {
-		t.Errorf("Expected player to still be in Dungeon, but in %s", game.Player.Location.Name)
+	if game.Player.Location.Name != "Room A" {
+		t.Errorf("Expected player to still be in Room A, but in %s", game.Player.Location.Name)
 	}
 
 	// Test WASD movement
-	game.HandleCommand("s")
-	if game.Player.Location.Name != "Hall" {
-		t.Errorf("Expected player to be in Hall, but in %s", game.Player.Location.Name)
+	game.HandleCommand("d") // 'd' is east in this layout
+	if game.Player.Location.Name != "Room B" {
+		t.Errorf("Expected player to be in Room B, but in %s", game.Player.Location.Name)
 	}
 }
 
 func TestLook(t *testing.T) {
-	game := NewGame()
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"] // Move player to the room with the item
 	lookResult := game.Look()
-	if !strings.Contains(lookResult, "You are in a long, dark hall.") {
+	if !strings.Contains(lookResult, "This is Room A.") {
 		t.Error("Look command did not return room description.")
 	}
-	if !strings.Contains(lookResult, "- sword") {
+	if !strings.Contains(lookResult, "- test_item") {
 		t.Error("Look command did not list items.")
 	}
 	if !strings.Contains(lookResult, "Exits:") {
@@ -48,18 +49,19 @@ func TestLook(t *testing.T) {
 }
 
 func TestTakeAndDrop(t *testing.T) {
-	game := NewGame()
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"] // Move player to the room with the item
 
 	// Test taking an item that exists
-	msg, _ := game.HandleCommand("take sword")
-	if !strings.Contains(msg, "You took the sword.") {
-		t.Errorf("Expected 'You took the sword', but got '%s'", msg)
+	msg, _ := game.HandleCommand("take test_item")
+	if !strings.Contains(msg, "You took the test_item.") {
+		t.Errorf("Expected 'You took the test_item', but got '%s'", msg)
 	}
-	if len(game.Player.Inventory) != 1 || game.Player.Inventory[0].Name != "sword" {
-		t.Error("Player inventory should contain the sword.")
+	if len(game.Player.Inventory) != 1 || game.Player.Inventory[0].Name != "test_item" {
+		t.Error("Player inventory should contain the test_item.")
 	}
 	if len(game.Player.Location.Items) != 0 {
-		t.Error("Room should not contain the sword after taking.")
+		t.Error("Room should not contain the item after taking.")
 	}
 
 	// Test taking a non-existent item
@@ -69,58 +71,69 @@ func TestTakeAndDrop(t *testing.T) {
 	}
 
 	// Test dropping an item
-	msg, _ = game.HandleCommand("drop sword")
-	if !strings.Contains(msg, "You dropped the sword.") {
-		t.Errorf("Expected 'You dropped the sword', but got '%s'", msg)
+	msg, _ = game.HandleCommand("drop test_item")
+	if !strings.Contains(msg, "You dropped the test_item.") {
+		t.Errorf("Expected 'You dropped the test_item', but got '%s'", msg)
 	}
 	if len(game.Player.Inventory) != 0 {
 		t.Error("Player inventory should be empty after dropping.")
 	}
-	if len(game.Player.Location.Items) != 1 || game.Player.Location.Items[0].Name != "sword" {
-		t.Error("Room should contain the sword after dropping.")
+	if len(game.Player.Location.Items) != 1 || game.Player.Location.Items[0].Name != "test_item" {
+		t.Error("Room should contain the item after dropping.")
 	}
 }
 
 func TestInventory(t *testing.T) {
-	game := NewGame()
+	game := createLayoutWithItems()
 	msg := game.Inventory()
 	if !strings.Contains(msg, "You are not carrying anything.") {
 		t.Errorf("Expected 'You are not carrying anything', but got '%s'", msg)
 	}
 
-	game.HandleCommand("take sword")
+	game.Player.Location = game.AllRooms["Room A"] // Move to room with item
+	game.HandleCommand("take test_item")
 	msg = game.Inventory()
-	if !strings.Contains(msg, "You have the following items:") || !strings.Contains(msg, "- sword") {
-		t.Errorf("Inventory did not list the sword correctly. Got: %s", msg)
+	if !strings.Contains(msg, "You have the following items:") || !strings.Contains(msg, "- test_item") {
+		t.Errorf("Inventory did not list the test_item correctly. Got: %s", msg)
 	}
 }
 
 func TestUnlock(t *testing.T) {
-	game := NewGame()
+	game := createLayoutWithLock()
 
 	// Try to unlock without key
-	game.HandleCommand("go north") // to Dungeon
-	msg, _ := game.HandleCommand("unlock")
-	if game.IsWon {
-		t.Error("Game should not be won when unlocking fails.")
-	}
+	msg, _ := game.HandleCommand("u")
 	if !strings.Contains(msg, "You don't have the key.") {
 		t.Errorf("Expected 'You don't have the key', but got '%s'", msg)
 	}
+	// Verify the door is still locked
+	if !game.Player.Location.Exits["east"].Locked {
+		t.Error("Door should still be locked.")
+	}
 
 	// Go get the key
-	game.HandleCommand("go south") // back to Hall
-	game.HandleCommand("go east")  // to Closet
+	game.HandleCommand("go west")  // to Room A
 	game.HandleCommand("take key")
+	if len(game.Player.Inventory) != 1 {
+		t.Fatal("Player should have the key now.")
+	}
 
 	// Go back to unlock
-	game.HandleCommand("go west")  // back to Hall
-	game.HandleCommand("go north") // to Dungeon
-	msg, _ = game.HandleCommand("unlock")
-	if !game.IsWon {
-		t.Error("Expected the game to be won")
+	game.HandleCommand("go east")  // back to Room B
+	msg, shouldExit := game.HandleCommand("u")
+	if shouldExit {
+		t.Error("Game should not exit when unlocking a regular door.")
 	}
-	if !strings.Contains(msg, "You unlocked the door!") {
-		t.Errorf("Expected 'You unlocked the door!', but got '%s'", msg)
+	if !strings.Contains(msg, "You unlocked the door.") {
+		t.Errorf("Expected 'You unlocked the door.', but got '%s'", msg)
+	}
+	if game.Player.Location.Exits["east"].Locked {
+		t.Error("Door should be unlocked now.")
+	}
+
+	// Test moving through the now unlocked door
+	game.HandleCommand("go east")
+	if game.Player.Location.Name != "Room C" {
+		t.Errorf("Expected to be in Room C, but in %s", game.Player.Location.Name)
 	}
 }
