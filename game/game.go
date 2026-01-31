@@ -47,18 +47,16 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 	case "quit", "q":
 		return "Goodbye!", true
 	case "help", "h":
-		return "Commands:\n- go [direction] (w,a,s,d)\n- look (l)\n- take [item]\n- e (take first item)\n- drop [item]\n- inventory (i)\n- unlock (u)\n- quit (q)", false
+		return "Instant Commands: w,a,s,d (move), e (take), i (inventory), u (unlock), l (look), q (quit)\nTyped Commands: go [dir], take [item], drop [item], unlock, help, quit", false
 	case "look", "l":
 		return g.Look(), false
 	case "inventory", "i":
 		return g.Inventory(), false
-	case "go", "w", "a", "s", "d":
+	case "go":
+		return g.Move(noun)
+	case "w", "a", "s", "d":
 		var dir string
-		if verb == "go" {
-			dir = noun
-		} else {
-			dir = map[string]string{"w": "north", "a": "west", "s": "south", "d": "east"}[verb]
-		}
+		dir = map[string]string{"w": "north", "a": "west", "s": "south", "d": "east"}[verb]
 		return g.Move(dir)
 	case "take":
 		return g.Take(noun), false

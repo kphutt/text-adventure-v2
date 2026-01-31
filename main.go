@@ -64,9 +64,15 @@ func main() {
 					inputStr = inputStr[:len(inputStr)-1]
 				}
 			case tcell.KeyRune:
-				message, shouldExit = g.HandleCommand(string(ev.Rune()))
-				if shouldExit {
-					return
+				var shouldExit bool
+				switch ev.Rune() {
+				case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
+					message, shouldExit = g.HandleCommand(string(ev.Rune()))
+					if shouldExit {
+						return
+					}
+				default:
+					inputStr += string(ev.Rune())
 				}
 			}
 		}

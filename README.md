@@ -8,19 +8,19 @@ This is a simple text-based adventure game written in Go.
     ```
     go run .
     ```
-2.  **Move around:**
-    *   Use the `w`, `a`, `s`, `d` keys to move north, west, south, and east.
-    *   You can also type `go [direction]` (e.g., `go north`).
-3.  **Interact with the world:**
-    *   `look` or `l`: Look around the room to see the description, items, and exits.
+2.  **Instant Commands (No Enter key needed):**
+    *   `w`, `a`, `s`, `d`: Move north, west, south, and east.
+    *   `e`: Take the first available item in the room.
+    *   `i`: View your inventory.
+    *   `u`: Attempt to unlock a door.
+    *   `l`: Look around the current room.
+    *   `q`: Quit the game.
+3.  **Typed Commands (Enter key needed):**
+    *   `go [direction]`: Move in a specific direction (e.g., `go north`).
     *   `take [item name]`: Pick up a specific item from the room.
-    *   `e`: A shortcut to take the first available item in the room.
-    *   `drop [item]`: Drop an item from your inventory into the room.
-    *   `inventory` or `i`: View your inventory.
-    *   `unlock` or `u`: Unlock a door.
-4.  **Other commands:**
-    *   `help` or `h`: Display the list of available commands.
-    *   `quit` or `q`: Quit the game.
+    *   `drop [item name]`: Drop an item from your inventory.
+    *   `help`: Display the list of available commands.
+    *   `quit`: Quit the game.
 
 ## The Goal
 
