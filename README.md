@@ -36,6 +36,8 @@ A simple, terminal-based text adventure game written in Go, now featuring proced
 
 The goal of the game is to find the key, unlock the door, and reach the treasure room!
 
+Good luck, adventurer!
+
 ## Design Details and Architecture
 
 For an in-depth look at the requirements, game design decisions, and the software architecture behind the procedural map generation, please refer to the [DESIGN.md](DESIGN.md) document.
@@ -43,5 +45,3 @@ For an in-depth look at the requirements, game design decisions, and the softwar
 ## Acknowledgments
 
 This project was developed with the assistance of Google's Gemini CLI, which served as an AI pair-programming partner for design, implementation, and refactoring.
-
-Good luck, adventurer!
