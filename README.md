@@ -46,6 +46,13 @@ For an in-depth look at the requirements, game design decisions, and the softwar
 
 To see the list of planned features, architectural improvements, and other brainstormed ideas for the future of this project, please refer to the [ROADMAP.md](ROADMAP.md) document.
 
+## Documentation Structure
+
+This project utilizes a structured documentation approach to keep design details and development logs organized.
+
+*   **[`docs/features/`](docs/features/)**: Contains detailed design documents for specific features (e.g., HUD and Score System). These documents include requirements, mockups, and implementation plans.
+*   **[`docs/dev_log/`](docs/dev_log/)**: Contains developer logs that summarize key design decisions, brainstorming sessions, and the evolution of complex features (e.g., the map rendering visual design).
+
 ## Acknowledgments
 
 This project was developed with the assistance of Google's Gemini CLI, which served as an AI pair-programming partner for design, implementation, and refactoring.
