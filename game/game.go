@@ -29,6 +29,7 @@ func NewGame() *Game {
 		Player:   player,
 		AllRooms: allRooms,
 		IsWon:    false,
+		Turns:    0,
 	}
 }
 
@@ -43,9 +44,12 @@ func GetAllRooms(room *world.Room, rooms map[string]*world.Room) {
 	}
 }
 
-// HandleCommand processes a player command.
+// HandleCommand processes a player command and updates the game state.
 func (g *Game) HandleCommand(command string) (string, bool) {
 	verb, noun := ParseInput(strings.ToLower(command))
+	
+	var msg string
+	var success, shouldExit bool
 
 	switch verb {
 	case "quit", "q":
@@ -57,26 +61,32 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 	case "inventory", "i":
 		return g.Inventory(), false
 	case "go":
-		return g.Move(noun)
+		msg, success = g.Move(noun)
 	case "w", "a", "s", "d":
 		var dir string
 		dir = map[string]string{"w": "north", "a": "west", "s": "south", "d": "east"}[verb]
-		return g.Move(dir)
+		msg, success = g.Move(dir)
 	case "take":
-		return g.Take(noun), false
+		msg, success = g.Take(noun)
 	case "e":
 		if len(g.Player.Location.Items) > 0 {
-			return g.Take(g.Player.Location.Items[0].Name), false
+			msg, success = g.Take(g.Player.Location.Items[0].Name)
+		} else {
+			msg, success = "There is nothing to take.", false
 		}
-		return "There is nothing to take.", false
 	case "drop":
-		return g.Drop(noun), false
+		msg, success = g.Drop(noun)
 	case "unlock", "u":
-		msg, shouldExit := g.Unlock()
-		return msg, shouldExit
+		msg, success, shouldExit = g.Unlock()
 	default:
-		return "I don't understand that command.", false
+		msg, success = "I don't understand that command.", false
 	}
+
+	if success {
+		g.Turns++
+	}
+
+	return msg, shouldExit
 }
 
 // Look returns the description of the player's current location.
@@ -116,18 +126,18 @@ func (g *Game) Move(direction string) (string, bool) {
 			return "The door is locked.", false
 		}
 		g.Player.Location = exit.Room
-		return "", false // The main loop will call Look, so we return an empty message
+		return "", true 
 	}
 	return "You can't go that way.", false
 }
 
 // Take picks up an item from the current room.
-func (g *Game) Take(itemName string) string {
+func (g *Game) Take(itemName string) (string, bool) {
 	if itemName == "" {
 		if len(g.Player.Location.Items) == 1 {
 			itemName = g.Player.Location.Items[0].Name
 		} else {
-			return "What do you want to take?"
+			return "What do you want to take?", false
 		}
 	}
 
@@ -135,30 +145,30 @@ func (g *Game) Take(itemName string) string {
 		if strings.ToLower(item.Name) == strings.ToLower(itemName) {
 			g.Player.Inventory = append(g.Player.Inventory, item)
 			g.Player.Location.Items = append(g.Player.Location.Items[:i], g.Player.Location.Items[i+1:]...)
-			return "You took the " + item.Name + "."
+			return "You took the " + item.Name + ".", true
 		}
 	}
-	return "You don't see that here."
+	return "You don't see that here.", false
 }
 
 // Drop drops an item into the current room.
-func (g *Game) Drop(itemName string) string {
+func (g *Game) Drop(itemName string) (string, bool) {
 	if itemName == "" {
-		return "What do you want to drop?"
+		return "What do you want to drop?", false
 	}
 
 	for i, item := range g.Player.Inventory {
 		if strings.ToLower(item.Name) == strings.ToLower(itemName) {
 			g.Player.Location.Items = append(g.Player.Location.Items, item)
 			g.Player.Inventory = append(g.Player.Inventory[:i], g.Player.Inventory[i+1:]...)
-			return "You dropped the " + item.Name + "."
+			return "You dropped the " + item.Name + ".", true
 		}
 	}
-	return "You don't have that."
+	return "You don't have that.", false
 }
 
 // Unlock unlocks a door.
-func (g *Game) Unlock() (string, bool) {
+func (g *Game) Unlock() (string, bool, bool) {
 	var lockedExit *world.Exit
 	for _, exit := range g.Player.Location.Exits {
 		if exit.Locked {
@@ -167,12 +177,10 @@ func (g *Game) Unlock() (string, bool) {
 		}
 	}
 
-	// First, check if there's anything to unlock
 	if lockedExit == nil {
-		return "There is nothing to unlock here.", false
+		return "There is nothing to unlock here.", false, false
 	}
 
-	// Now check if the player has the key
 	hasKey := false
 	for _, item := range g.Player.Inventory {
 		if item.Name == "key" {
@@ -182,16 +190,13 @@ func (g *Game) Unlock() (string, bool) {
 	}
 
 	if !hasKey {
-		return "You don't have the key.", false
+		return "You don't have the key.", false, false
 	}
 
-	// If we've reached here, unlock the door
 	lockedExit.Locked = false
-	// Check if the unlocked room is the treasure room
 	if lockedExit.Room.Name == "Treasure Room" {
 		g.IsWon = true
-		return "You unlocked the door! You win!", true
+		return "You unlocked the door! You win!", true, true
 	}
-	return "You unlocked the door.", false
+	return "You unlocked the door.", true, false
 }
-

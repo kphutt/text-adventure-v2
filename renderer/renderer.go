@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"fmt"
 	"strings"
 	"text-adventure-v2/world"
 )
@@ -8,8 +9,10 @@ import (
 // MapView contains all the necessary data for the renderer to draw the map.
 // It acts as a decoupled view model for the rendering engine.
 type MapView struct {
-	AllRooms       map[string]*world.Room
-	PlayerLocation *world.Room
+	AllRooms          map[string]*world.Room
+	PlayerLocation    *world.Room
+	CurrentLocationName string
+	TurnsTaken        int
 }
 
 // RenderMap takes a MapView and produces an ASCII string representation of the map.
@@ -51,5 +54,14 @@ func RenderMap(view MapView) string {
 		}
 		b.WriteString("\n")
 	}
+	return b.String()
+}
+
+// RenderHUD takes a MapView and produces a formatted string for the status bar.
+func RenderHUD(view MapView) string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("Location: %s\n", view.CurrentLocationName))
+	b.WriteString(fmt.Sprintf("Turns: %d\n", view.TurnsTaken))
+	b.WriteString(strings.Repeat("-", 50)) // A separator line
 	return b.String()
 }

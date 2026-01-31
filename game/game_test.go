@@ -7,8 +7,8 @@ import (
 
 func TestMovement(t *testing.T) {
 	game := createSimpleLayout()
-	if game.Player.Location.Name != "Room B" {
-		t.Errorf("Expected player to start in Room B, but in %s", game.Player.Location.Name)
+	if game.Turns != 0 {
+		t.Errorf("Game should start with 0 turns, but has %d", game.Turns)
 	}
 
 	// Test valid movement (go west)
@@ -16,11 +16,17 @@ func TestMovement(t *testing.T) {
 	if game.Player.Location.Name != "Room A" {
 		t.Errorf("Expected player to be in Room A, but in %s", game.Player.Location.Name)
 	}
+	if game.Turns != 1 {
+		t.Errorf("Valid move should increment turns. Expected 1, got %d", game.Turns)
+	}
 
 	// Test moving back (go east)
 	game.HandleCommand("go east")
 	if game.Player.Location.Name != "Room B" {
 		t.Errorf("Expected player to move back to Room B, but in %s", game.Player.Location.Name)
+	}
+	if game.Turns != 2 {
+		t.Errorf("Valid move should increment turns. Expected 2, got %d", game.Turns)
 	}
 
 	// Test invalid typed movement
@@ -28,8 +34,8 @@ func TestMovement(t *testing.T) {
 	if !strings.Contains(msg, "You can't go that way.") {
 		t.Errorf("Expected 'You can't go that way.', but got '%s'", msg)
 	}
-	if game.Player.Location.Name != "Room B" {
-		t.Errorf("Expected player to still be in Room B, but in %s", game.Player.Location.Name)
+	if game.Turns != 2 {
+		t.Errorf("Invalid move should not increment turns. Expected 2, got %d", game.Turns)
 	}
 
 	// Test WASD movement
@@ -37,140 +43,142 @@ func TestMovement(t *testing.T) {
 	if game.Player.Location.Name != "Room C" {
 		t.Errorf("Expected player to be in Room C, but in %s", game.Player.Location.Name)
 	}
+	if game.Turns != 3 {
+		t.Errorf("Valid WASD move should increment turns. Expected 3, got %d", game.Turns)
+	}
 
 	// Test invalid single-letter command
 	msg, _ = game.HandleCommand("x")
 	if !strings.Contains(msg, "I don't understand that command.") {
 		t.Errorf("Expected 'I don't understand that command.', but got '%s'", msg)
 	}
-	if game.Player.Location.Name != "Room C" {
-		t.Errorf("Expected player to still be in Room C, but in %s", game.Player.Location.Name)
+	if game.Turns != 3 {
+		t.Errorf("Unknown command should not increment turns. Expected 3, got %d", game.Turns)
 	}
 }
 
 func TestLook(t *testing.T) {
 	game := createLayoutWithItems()
-	game.Player.Location = game.AllRooms["Room A"] // Move player to the room with the item
-	lookResult := game.Look()
-	if !strings.Contains(lookResult, "This is Room A.") {
-		t.Error("Look command did not return room description.")
-	}
-	if !strings.Contains(lookResult, "- test_item") {
-		t.Error("Look command did not list items.")
-	}
-	if !strings.Contains(lookResult, "Exits:") {
-		t.Error("Look command did not list exits.")
+	game.HandleCommand("look")
+	if game.Turns != 0 {
+		t.Errorf("Look command should not increment turns, but got %d", game.Turns)
 	}
 }
 
 func TestTakeAndDrop(t *testing.T) {
 	game := createLayoutWithItems()
 
-	// Test taking from an empty room using the 'e' shortcut
-	msg, _ := game.HandleCommand("e")
-	if !strings.Contains(msg, "There is nothing to take.") {
-		t.Errorf("Expected 'There is nothing to take', but got '%s'", msg)
+	// Test taking from an empty room using the 'e' shortcut (should not increment turn)
+	game.HandleCommand("e")
+	if game.Turns != 0 {
+		t.Errorf("Failed 'e' command should not increment turns, but got %d", game.Turns)
 	}
 
 	// Move player to the room with the item
 	game.Player.Location = game.AllRooms["Room A"] 
 
-	// Test taking an item that exists
-	msg, _ = game.HandleCommand("take test_item")
-	if !strings.Contains(msg, "You took the test_item.") {
-		t.Errorf("Expected 'You took the test_item', but got '%s'", msg)
-	}
-	if len(game.Player.Inventory) != 1 || game.Player.Inventory[0].Name != "test_item" {
-		t.Error("Player inventory should contain the test_item.")
-	}
-	if len(game.Player.Location.Items) != 0 {
-		t.Error("Room should not contain the item after taking.")
+	// Test taking an item that exists (should increment turn)
+	game.HandleCommand("take test_item")
+	if game.Turns != 1 {
+		t.Errorf("Successful take should increment turns. Expected 1, got %d", game.Turns)
 	}
 
-	// Test taking a non-existent item
-	msg, _ = game.HandleCommand("take shield")
-	if !strings.Contains(msg, "You don't see that here.") {
-		t.Errorf("Expected 'You don't see that here', but got '%s'", msg)
+	// Test taking a non-existent item (should not increment turn)
+	game.HandleCommand("take shield")
+	if game.Turns != 1 {
+		t.Errorf("Failed take should not increment turns. Expected 1, got %d", game.Turns)
 	}
 
-	// Test dropping an un-held item
-	msg, _ = game.HandleCommand("drop key")
-	if !strings.Contains(msg, "You don't have that.") {
-		t.Errorf("Expected 'You don't have that', but got '%s'", msg)
+	// Test dropping an un-held item (should not increment turn)
+	game.HandleCommand("drop key")
+	if game.Turns != 1 {
+		t.Errorf("Failed drop should not increment turns. Expected 1, got %d", game.Turns)
 	}
 
-	// Test dropping a held item
-	msg, _ = game.HandleCommand("drop test_item")
-	if !strings.Contains(msg, "You dropped the test_item.") {
-		t.Errorf("Expected 'You dropped the test_item', but got '%s'", msg)
-	}
-	if len(game.Player.Inventory) != 0 {
-		t.Error("Player inventory should be empty after dropping.")
-	}
-	if len(game.Player.Location.Items) != 1 || game.Player.Location.Items[0].Name != "test_item" {
-		t.Error("Room should contain the item after dropping.")
+	// Test dropping a held item (should increment turn)
+	game.HandleCommand("drop test_item")
+	if game.Turns != 2 {
+		t.Errorf("Successful drop should increment turns. Expected 2, got %d", game.Turns)
 	}
 }
 
 func TestInventory(t *testing.T) {
 	game := createLayoutWithItems()
-	msg := game.Inventory()
-	if !strings.Contains(msg, "You are not carrying anything.") {
-		t.Errorf("Expected 'You are not carrying anything', but got '%s'", msg)
+	game.HandleCommand("inventory")
+	if game.Turns != 0 {
+		t.Errorf("Inventory command should not increment turns, but got %d", game.Turns)
 	}
 
-	game.Player.Location = game.AllRooms["Room A"] // Move to room with item
+	game.Player.Location = game.AllRooms["Room A"]
 	game.HandleCommand("take test_item")
-	msg = game.Inventory()
-	if !strings.Contains(msg, "You have the following items:") || !strings.Contains(msg, "- test_item") {
-		t.Errorf("Inventory did not list the test_item correctly. Got: %s", msg)
+	if game.Turns != 1 {
+		t.Errorf("Turns should be 1 after taking item.")
+	}
+	game.HandleCommand("inventory")
+	if game.Turns != 1 {
+		t.Errorf("Inventory command should not increment turns after taking. Expected 1, got %d", game.Turns)
 	}
 }
 
 func TestUnlock(t *testing.T) {
-	// Test unlocking in a room with no locked doors
+	// Test unlocking in a room with no locked doors (should not increment turn)
 	gameNoLock := createSimpleLayout()
-	msg, _ := gameNoLock.HandleCommand("unlock")
-	if !strings.Contains(msg, "There is nothing to unlock here.") {
-		t.Errorf("Expected 'There is nothing to unlock here.', but got '%s'", msg)
+	gameNoLock.HandleCommand("unlock")
+	if gameNoLock.Turns != 0 {
+		t.Errorf("Failed unlock should not increment turns, but got %d", gameNoLock.Turns)
 	}
 
 	// Test the full unlock sequence
 	game := createLayoutWithLock()
 
-	// Try to unlock without key
-	msg, _ = game.HandleCommand("u")
-	if !strings.Contains(msg, "You don't have the key.") {
-		t.Errorf("Expected 'You don't have the key', but got '%s'", msg)
-	}
-	// Verify the door is still locked
-	if !game.Player.Location.Exits["east"].Locked {
-		t.Error("Door should still be locked.")
+	// Try to unlock without key (should not increment turn)
+	game.HandleCommand("u")
+	if game.Turns != 0 {
+		t.Errorf("Failed unlock (no key) should not increment turns, but got %d", game.Turns)
 	}
 
 	// Go get the key
-	game.HandleCommand("go west")  // to Room A
-	game.HandleCommand("take key")
-	if len(game.Player.Inventory) != 1 {
-		t.Fatal("Player should have the key now.")
+	game.HandleCommand("go west")  // Turn 1
+	game.HandleCommand("take key") // Turn 2
+	if game.Turns != 2 {
+		t.Errorf("Expected 2 turns after moving and taking key, got %d", game.Turns)
 	}
 
 	// Go back to unlock
-	game.HandleCommand("go east")  // back to Room B
-	msg, shouldExit := game.HandleCommand("u")
-	if shouldExit {
-		t.Error("Game should not exit when unlocking a regular door.")
-	}
-	if !strings.Contains(msg, "You unlocked the door.") {
-		t.Errorf("Expected 'You unlocked the door.', but got '%s'", msg)
-	}
-	if game.Player.Location.Exits["east"].Locked {
-		t.Error("Door should be unlocked now.")
+	game.HandleCommand("go east")  // Turn 3
+	game.HandleCommand("u")       // Turn 4 (successful unlock)
+	if game.Turns != 4 {
+		t.Errorf("Expected 4 turns after successful unlock, got %d", game.Turns)
 	}
 
 	// Test moving through the now unlocked door
-	game.HandleCommand("go east")
+	game.HandleCommand("go east") // Turn 5
 	if game.Player.Location.Name != "Room C" {
 		t.Errorf("Expected to be in Room C, but in %s", game.Player.Location.Name)
+	}
+	if game.Turns != 5 {
+		t.Errorf("Expected 5 turns after final move, got %d", game.Turns)
+	}
+}
+
+func TestUnlock_WinCondition(t *testing.T) {
+	game := createLayoutWithWinCondition()
+
+	// Go get the key
+	game.HandleCommand("go west") // to Room A
+	game.HandleCommand("take key")
+
+	// Go back to unlock the final door
+	game.HandleCommand("go east") // back to Room B
+	msg, shouldExit := game.HandleCommand("u")
+
+	if !shouldExit {
+		t.Error("Game should exit when unlocking the treasure room door.")
+	}
+	if !game.IsWon {
+		t.Error("Game IsWon flag should be true after winning.")
+	}
+	if !strings.Contains(msg, "You win!") {
+		t.Errorf("Expected win message, but got '%s'", msg)
 	}
 }

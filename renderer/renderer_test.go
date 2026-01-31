@@ -62,8 +62,24 @@ func TestRenderMap_SimpleRow(t *testing.T) {
 	
 		actual := RenderMap(view)
 	
-		if actual != expected {
-			t.Errorf("RenderMap MultiLine failed.\nExpected:\n%s\nGot:\n%s", expected, actual)
+			if actual != expected {
+				t.Errorf("RenderMap MultiLine failed.\nExpected:\n%s\nGot:\n%s", expected, actual)
+			}
 		}
-	}
-	
+		
+		func TestRenderHUD(t *testing.T) {
+			view := MapView{
+				CurrentLocationName: "Test Room",
+				TurnsTaken:        42,
+			}
+		
+			actual := RenderHUD(view)
+			expected := "Location: Test Room\n" +
+				        "Turns: 42\n" +
+				        "--------------------------------------------------"
+		
+			if actual != expected {
+				t.Errorf("RenderHUD failed.\nExpected:\n%s\nGot:\n%s", expected, actual)
+			}
+		}
+		

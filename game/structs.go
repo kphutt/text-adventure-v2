@@ -7,4 +7,5 @@ type Game struct {
 	Player   *world.Player
 	AllRooms map[string]*world.Room
 	IsWon    bool
+	Turns    int
 }

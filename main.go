@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -31,23 +32,27 @@ func main() {
 	for {
 		screen.Clear()
 
+		// Create the view model for the renderer
+		mapView := renderer.MapView{
+			AllRooms:          g.AllRooms,
+			PlayerLocation:    g.Player.Location,
+			CurrentLocationName: g.Player.Location.Name,
+			TurnsTaken:        g.Turns,
+		}
+
+		// Render the HUD and Map
+		hudString := renderer.RenderHUD(mapView)
+		mapString := renderer.RenderMap(mapView)
+
 		y := 0
 
-		helpMessage, _ := g.HandleCommand("help")
-		for _, line := range strings.Split(helpMessage, "\n") {
+		// Draw the HUD
+		for _, line := range strings.Split(hudString, "\n") {
 			drawText(screen, 0, y, tcell.StyleDefault, line)
 			y++
 		}
 
-		y++
-		
-		// Create the view model for the renderer
-		mapView := renderer.MapView{
-			AllRooms:       g.AllRooms,
-			PlayerLocation: g.Player.Location,
-		}
-		mapString := renderer.RenderMap(mapView)
-
+		// Draw the Map
 		for _, line := range strings.Split(mapString, "\n") {
 			drawText(screen, 0, y, tcell.StyleDefault, line)
 			y++
@@ -94,8 +99,9 @@ func main() {
 				message, shouldExit = g.HandleCommand(command)
 				if shouldExit {
 					screen.Clear()
-					drawText(screen, 0, 0, tcell.StyleDefault, message) // Use the message from g.HandleCommand
-					drawText(screen, 0, 1, tcell.StyleDefault, "Press any key to exit.")
+					winMessage := fmt.Sprintf("%s\n\nTotal Turns: %d", message, g.Turns)
+					drawText(screen, 0, 0, tcell.StyleDefault, winMessage)
+					drawText(screen, 0, 3, tcell.StyleDefault, "Press any key to exit.")
 					screen.Show()
 					// wait for any key press
 					for {
