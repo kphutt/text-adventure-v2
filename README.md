@@ -40,7 +40,11 @@ Good luck, adventurer!
 
 ## Design Details and Architecture
 
-For an in-depth look at the requirements, game design decisions, and the software architecture behind the procedural map generation, please refer to the [DESIGN.md](DESIGN.md) document.
+For an in-depth look at the requirements, game design decisions, and the software architecture of the project, please refer to the [DESIGN.md](DESIGN.md) document.
+
+## Project Roadmap
+
+To see the list of planned features, architectural improvements, and other brainstormed ideas for the future of this project, please refer to the [ROADMAP.md](ROADMAP.md) document.
 
 ## Acknowledgments
 
