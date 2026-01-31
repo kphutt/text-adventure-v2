@@ -1,6 +1,8 @@
 package game
 
-import "strings"
+import (
+	"strings"
+)
 
 // GetMapString generates a string representation of the world map.
 func (g *Game) GetMapString() string {
@@ -31,8 +33,8 @@ func (g *Game) GetMapString() string {
 					} else {
 						b.WriteString("[ ]")
 					}
-				isRoom = true
-				break
+					isRoom = true
+					break
 				}
 			}
 			if !isRoom {

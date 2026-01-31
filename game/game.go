@@ -3,18 +3,26 @@ package game
 import (
 	"fmt"
 	"strings"
+	"text-adventure-v2/generator"
+	"text-adventure-v2/world"
 )
 
 // NewGame creates a new game instance.
 func NewGame() *Game {
-	startRoom := CreateWorld()
-	allRooms := make(map[string]*Room)
+	// Generate a new world
+	startRoom, err := generator.Generate(generator.DefaultConfig())
+	if err != nil {
+		// For now, we'll panic. In a real application, you might want to handle this more gracefully.
+		panic(fmt.Sprintf("failed to generate world: %v", err))
+	}
+
+	allRooms := make(map[string]*world.Room)
 	GetAllRooms(startRoom, allRooms)
 
-	player := &Player{
+	player := &world.Player{
 		Name:      "Player",
 		Location:  startRoom,
-		Inventory: make([]*Item, 0),
+		Inventory: make([]*world.Item, 0),
 	}
 
 	return &Game{
@@ -25,12 +33,13 @@ func NewGame() *Game {
 }
 
 // GetAllRooms recursively finds all rooms starting from a given room.
-func GetAllRooms(room *Room, rooms map[string]*Room) {
+func GetAllRooms(room *world.Room, rooms map[string]*world.Room) {
+	if _, ok := rooms[room.Name]; ok {
+		return
+	}
 	rooms[room.Name] = room
 	for _, exit := range room.Exits {
-		if _, ok := rooms[exit.Room.Name]; !ok {
-			GetAllRooms(exit.Room, rooms)
-		}
+		GetAllRooms(exit.Room, rooms)
 	}
 }
 
@@ -123,7 +132,7 @@ func (g *Game) Take(itemName string) string {
 	}
 
 	for i, item := range g.Player.Location.Items {
-		if item.Name == itemName {
+		if strings.ToLower(item.Name) == strings.ToLower(itemName) {
 			g.Player.Inventory = append(g.Player.Inventory, item)
 			g.Player.Location.Items = append(g.Player.Location.Items[:i], g.Player.Location.Items[i+1:]...)
 			return "You took the " + item.Name + "."
@@ -139,7 +148,7 @@ func (g *Game) Drop(itemName string) string {
 	}
 
 	for i, item := range g.Player.Inventory {
-		if item.Name == itemName {
+		if strings.ToLower(item.Name) == strings.ToLower(itemName) {
 			g.Player.Location.Items = append(g.Player.Location.Items, item)
 			g.Player.Inventory = append(g.Player.Inventory[:i], g.Player.Inventory[i+1:]...)
 			return "You dropped the " + item.Name + "."
@@ -150,18 +159,30 @@ func (g *Game) Drop(itemName string) string {
 
 // Unlock unlocks a door.
 func (g *Game) Unlock() (string, bool) {
-	if g.Player.Location.Name == "Dungeon" {
-		if exit, ok := g.Player.Location.Exits["north"]; ok && exit.Locked {
-			for _, item := range g.Player.Inventory {
-				if item.Name == "key" {
-					exit.Locked = false
-					g.IsWon = true
-					return "You unlocked the door! You win!", true
-				}
-			}
-			return "You don't have the key.", false
+	hasKey := false
+	for _, item := range g.Player.Inventory {
+		if item.Name == "key" {
+			hasKey = true
+			break
 		}
 	}
+
+	if !hasKey {
+		return "You don't have the key.", false
+	}
+
+	for _, exit := range g.Player.Location.Exits {
+		if exit.Locked {
+			exit.Locked = false
+			// Check if the unlocked room is the treasure room
+			if exit.Room.Name == "Treasure Room" {
+				g.IsWon = true
+				return "You unlocked the door! You win!", true
+			}
+			return "You unlocked the door.", false
+		}
+	}
+
 	return "There is nothing to unlock here.", false
 }
 

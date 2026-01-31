@@ -1,11 +1,18 @@
-# Text Adventure Game
+# Go Text Adventure Game
 
-This is a simple text-based adventure game written in Go.
+A simple, terminal-based text adventure game written in Go, now featuring procedurally generated and unique worlds for endless replayability!
+
+## Key Features
+
+*   **Procedurally Generated Worlds**: Every new game offers a unique map layout, ensuring a fresh experience with each playthrough.
+*   **Dynamic Puzzles**: Key items, locked doors, and treasure rooms are strategically placed to guarantee a solvable and engaging challenge.
+*   **Terminal-Based UI**: A classic text adventure experience directly in your terminal.
+*   **Clear Map Visualization**: An in-game map helps you navigate the generated world.
 
 ## How to Play
 
 1.  **Run the game:**
-    ```
+    ```bash
     go run .
     ```
 2.  **Instant Commands (No Enter key needed):**
@@ -24,6 +31,10 @@ This is a simple text-based adventure game written in Go.
 
 ## The Goal
 
-The goal of the game is to find the key and unlock the treasure room.
+The goal of the game is to find the key, unlock the door, and reach the treasure room!
 
-Good luck!
+## Design Details and Architecture
+
+For an in-depth look at the requirements, game design decisions, and the software architecture behind the procedural map generation, please refer to the [DESIGN.md](DESIGN.md) document.
+
+Good luck, adventurer!
