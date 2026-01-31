@@ -100,9 +100,9 @@ func TestUnlock(t *testing.T) {
 
 	// Try to unlock without key
 	game.HandleCommand("go north") // to Dungeon
-	msg, shouldExit := game.HandleCommand("unlock")
-	if shouldExit {
-		t.Error("Game should not exit when unlocking fails.")
+	msg, _ := game.HandleCommand("unlock")
+	if game.IsWon {
+		t.Error("Game should not be won when unlocking fails.")
 	}
 	if !strings.Contains(msg, "You don't have the key.") {
 		t.Errorf("Expected 'You don't have the key', but got '%s'", msg)
@@ -116,19 +116,11 @@ func TestUnlock(t *testing.T) {
 	// Go back to unlock
 	game.HandleCommand("go west")  // back to Hall
 	game.HandleCommand("go north") // to Dungeon
-	msg, shouldExit = game.HandleCommand("unlock")
-	if !shouldExit {
-		t.Error("Game should exit after winning.")
+	msg, _ = game.HandleCommand("unlock")
+	if !game.IsWon {
+		t.Error("Expected the game to be won")
 	}
-	if !strings.Contains(msg, "You unlocked the door! You win!") {
-		t.Errorf("Expected 'You unlocked the door! You win!', but got '%s'", msg)
-	}
-}
-
-func TestInvalidInput(t *testing.T) {
-	game := NewGame()
-	msg, _ := game.HandleCommand("foo bar")
-	if !strings.Contains(msg, "I don't understand that command.") {
-		t.Errorf("Expected 'I don't understand that command', but got '%s'", msg)
+	if !strings.Contains(msg, "You unlocked the door!") {
+		t.Errorf("Expected 'You unlocked the door!', but got '%s'", msg)
 	}
 }

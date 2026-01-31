@@ -5,12 +5,6 @@ import (
 	"strings"
 )
 
-// Game holds the entire state of the game.
-type Game struct {
-	Player   *Player
-	AllRooms map[string]*Room
-}
-
 // NewGame creates a new game instance.
 func NewGame() *Game {
 	startRoom := CreateWorld()
@@ -26,6 +20,7 @@ func NewGame() *Game {
 	return &Game{
 		Player:   player,
 		AllRooms: allRooms,
+		IsWon:    false,
 	}
 }
 
@@ -68,8 +63,7 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 	case "drop":
 		return g.Drop(noun), false
 	case "unlock", "u":
-		msg, shouldExit := g.Unlock()
-		return msg, shouldExit
+		return g.Unlock(), false
 	default:
 		return "I don't understand that command.", false
 	}
@@ -154,18 +148,19 @@ func (g *Game) Drop(itemName string) string {
 }
 
 // Unlock unlocks a door.
-func (g *Game) Unlock() (string, bool) {
+func (g *Game) Unlock() string {
 	if g.Player.Location.Name == "Dungeon" {
 		if exit, ok := g.Player.Location.Exits["north"]; ok && exit.Locked {
 			for _, item := range g.Player.Inventory {
 				if item.Name == "key" {
 					exit.Locked = false
-					return "You unlocked the door! You win!", true
+					g.IsWon = true
+					return "You unlocked the door!"
 				}
 			}
-			return "You don't have the key.", false
+			return "You don't have the key."
 		}
 	}
-	return "There is nothing to unlock here.", false
+	return "There is nothing to unlock here."
 }
 

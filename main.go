@@ -29,6 +29,14 @@ func main() {
 
 	for {
 		screen.Clear()
+
+		if g.IsWon {
+			drawText(screen, 0, 0, tcell.StyleDefault, "You win! Press any key to exit.")
+			screen.Show()
+			screen.PollEvent()
+			return
+		}
+
 		y := 0
 		for _, line := range strings.Split(g.Look(), "\n") {
 			drawText(screen, 0, y, tcell.StyleDefault, line)
@@ -50,29 +58,25 @@ func main() {
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
 			var shouldExit bool
+			var command string
 			switch ev.Key() {
 			case tcell.KeyEscape:
 				return
 			case tcell.KeyEnter:
-				message, shouldExit = g.HandleCommand(inputStr)
-				if shouldExit {
-					return
-				}
+				command = inputStr
 				inputStr = ""
 			case tcell.KeyBackspace, tcell.KeyBackspace2:
 				if len(inputStr) > 0 {
 					inputStr = inputStr[:len(inputStr)-1]
 				}
 			case tcell.KeyRune:
-				var shouldExit bool
-				switch ev.Rune() {
-				case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
-					message, shouldExit = g.HandleCommand(string(ev.Rune()))
-					if shouldExit {
-						return
-					}
-				default:
-					inputStr += string(ev.Rune())
+				command = string(ev.Rune())
+			}
+
+			if command != "" {
+				message, shouldExit = g.HandleCommand(command)
+				if shouldExit {
+					return
 				}
 			}
 		}

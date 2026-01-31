@@ -27,3 +27,10 @@ type Player struct {
 	Location  *Room
 	Inventory []*Item
 }
+
+// Game holds the entire state of the game.
+type Game struct {
+	Player   *Player
+	AllRooms map[string]*Room
+	IsWon    bool
+}
