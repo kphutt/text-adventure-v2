@@ -196,7 +196,7 @@ func (g *Game) Unlock() (string, bool, bool) {
 	lockedExit.Locked = false
 	if lockedExit.Room.Name == "Treasure Room" {
 		g.IsWon = true
-		return "You unlocked the door! You win!", true, true
+		return "You unlocked the door! You win!", false, true
 	}
 	return "You unlocked the door.", true, false
 }

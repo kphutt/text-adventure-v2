@@ -23,6 +23,8 @@ func main() {
 	if err := screen.Init(); err != nil {
 		panic(err)
 	}
+	screen.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
+	screen.EnableMouse()
 	defer screen.Fini()
 
 	g := game.NewGame()

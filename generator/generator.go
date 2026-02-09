@@ -1,6 +1,9 @@
 package generator
 
-import "text-adventure-v2/world"
+import (
+	"text-adventure-v2/world"
+	"fmt"
+)
 
 // Config holds the parameters for map generation.
 type Config struct {
@@ -44,23 +47,34 @@ func DefaultConfig() Config {
 
 // Generate orchestrates the creation of a new, random, and solvable game world.
 func Generate(config Config) (*world.Room, error) {
-	// Step 1: Build the raw world structure.
-	startRoom, allRooms, err := buildWorld(config)
-	if err != nil {
-		return nil, err
+	var err error
+	const maxRetries = 10
+
+	for i := 0; i < maxRetries; i++ {
+		// Step 1: Build the raw world structure.
+		var startRoom *world.Room
+		var allRooms map[string]*world.Room
+		startRoom, allRooms, err = buildWorld(config)
+		if err != nil {
+			continue // Should be rare, but retry if it happens
+		}
+
+		// Step 2: Place the puzzles and extra items.
+		err = placePuzzles(config, startRoom, allRooms)
+		if err != nil {
+			continue // This can fail if the map is too simple, so we retry
+		}
+
+		// Step 3: Validate that the world is solvable.
+		err = validateWorld(startRoom, allRooms)
+		if err != nil {
+			continue // Should be rare, but retry if validation fails
+		}
+
+		// If we get here, the world is valid.
+		return startRoom, nil
 	}
 
-	// Step 2: Place the puzzles and extra items.
-	err = placePuzzles(config, startRoom, allRooms)
-	if err != nil {
-		return nil, err
-	}
-
-	// Step 3: Validate that the world is solvable.
-	err = validateWorld(startRoom, allRooms)
-	if err != nil {
-		return nil, err
-	}
-
-	return startRoom, nil
+	// If we've exhausted all retries, return the last error encountered.
+	return nil, fmt.Errorf("failed to generate a valid world after %d attempts: %w", maxRetries, err)
 }
