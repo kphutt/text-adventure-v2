@@ -3,13 +3,11 @@ package generator
 import (
 	"errors"
 	"math/rand"
-	"time"
 	"text-adventure-v2/world"
 )
 
 // buildWorld creates the raw structure of the world (rooms and their connections).
 func buildWorld(config Config) (*world.Room, map[string]*world.Room, error) {
-	rand.Seed(time.Now().UnixNano())
 
 	if len(config.RoomNamePool) < config.NumberOfRooms {
 		return nil, nil, errors.New("not enough unique room names in the pool for the number of rooms requested")
@@ -30,7 +28,7 @@ func buildWorld(config Config) (*world.Room, map[string]*world.Room, error) {
 	grid := make(map[int]map[int]*world.Room)
 	grid[0] = make(map[int]*world.Room)
 	grid[0][0] = startRoom
-	
+
 	roomNamePool := make([]string, len(config.RoomNamePool))
 	copy(roomNamePool, config.RoomNamePool)
 	rand.Shuffle(len(roomNamePool), func(i, j int) { roomNamePool[i], roomNamePool[j] = roomNamePool[j], roomNamePool[i] })
@@ -48,7 +46,7 @@ func buildWorld(config Config) (*world.Room, map[string]*world.Room, error) {
 			// Pick a random direction
 			dirs := []string{"north", "south", "east", "west"}
 			dir := dirs[rand.Intn(len(dirs))]
-			
+
 			dx, dy := 0, 0
 			var oppositeDir string
 			switch dir {
