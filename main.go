@@ -182,6 +182,7 @@ func (m model) View() string {
 		CurrentLocationName: m.game.Player.Location.Name,
 		TurnsTaken:          m.game.Turns,
 		Score:               m.game.Score(),
+		VisitedRooms:        m.game.VisitedRooms,
 	}
 
 	hudStr := hudStyle.Render(renderer.RenderHUD(mapView))
