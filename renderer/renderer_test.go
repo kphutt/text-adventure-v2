@@ -218,6 +218,79 @@ func TestRenderHUD(t *testing.T) {
 	}
 }
 
+// --- isExitLocked tests ---
+
+func TestIsExitLocked_LockedExit(t *testing.T) {
+	room := &world.Room{Name: "A", Exits: map[string]*world.Exit{
+		"east": {Room: &world.Room{Name: "B"}, Locked: true},
+	}}
+	if !isExitLocked(room, "east") {
+		t.Error("isExitLocked should return true for locked exit")
+	}
+}
+
+func TestIsExitLocked_UnlockedExit(t *testing.T) {
+	room := &world.Room{Name: "A", Exits: map[string]*world.Exit{
+		"east": {Room: &world.Room{Name: "B"}, Locked: false},
+	}}
+	if isExitLocked(room, "east") {
+		t.Error("isExitLocked should return false for unlocked exit")
+	}
+}
+
+func TestIsExitLocked_NoSuchExit(t *testing.T) {
+	room := &world.Room{Name: "A", Exits: map[string]*world.Exit{}}
+	if isExitLocked(room, "north") {
+		t.Error("isExitLocked should return false when exit does not exist")
+	}
+}
+
+// --- computeBounds tests ---
+
+func TestComputeBounds_SingleRoom(t *testing.T) {
+	rooms := map[string]*world.Room{
+		"A": {Name: "A", X: 3, Y: 5, Exits: map[string]*world.Exit{}},
+	}
+	minX, minY, maxX, maxY := computeBounds(rooms)
+	if minX != 3 || minY != 5 || maxX != 3 || maxY != 5 {
+		t.Errorf("Expected bounds (3,5,3,5), got (%d,%d,%d,%d)", minX, minY, maxX, maxY)
+	}
+}
+
+func TestComputeBounds_MultipleRooms(t *testing.T) {
+	rooms := map[string]*world.Room{
+		"A": {Name: "A", X: -1, Y: 2, Exits: map[string]*world.Exit{}},
+		"B": {Name: "B", X: 3, Y: -1, Exits: map[string]*world.Exit{}},
+		"C": {Name: "C", X: 0, Y: 0, Exits: map[string]*world.Exit{}},
+	}
+	minX, minY, maxX, maxY := computeBounds(rooms)
+	if minX != -1 {
+		t.Errorf("Expected minX=-1, got %d", minX)
+	}
+	if minY != -1 {
+		t.Errorf("Expected minY=-1, got %d", minY)
+	}
+	if maxX != 3 {
+		t.Errorf("Expected maxX=3, got %d", maxX)
+	}
+	if maxY != 2 {
+		t.Errorf("Expected maxY=2, got %d", maxY)
+	}
+}
+
+// --- RenderMap empty tests ---
+
+func TestRenderMap_Empty(t *testing.T) {
+	view := MapView{
+		AllRooms:     map[string]*world.Room{},
+		VisitedRooms: map[string]bool{},
+	}
+	result := RenderMap(view)
+	if result != "" {
+		t.Errorf("RenderMap with empty rooms should return empty string, got: %q", result)
+	}
+}
+
 func TestRenderHUD_ZeroScore(t *testing.T) {
 	view := MapView{
 		CurrentLocationName: "Start",

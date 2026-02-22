@@ -3,6 +3,7 @@ package game
 import (
 	"strings"
 	"testing"
+	"text-adventure-v2/world"
 )
 
 func TestMovement(t *testing.T) {
@@ -219,6 +220,369 @@ func TestScore_WithInventoryItems(t *testing.T) {
 	if score != 15 {
 		t.Errorf("Expected score 15 (1 item + 1 room), got %d", score)
 	}
+}
+
+// --- GetAllRooms tests ---
+
+func TestGetAllRooms_FindsAllConnectedRooms(t *testing.T) {
+	// Build a 4-room graph: A--B--C, B--D
+	a := createRoomWithExits("A")
+	b := createRoomWithExits("B")
+	c := createRoomWithExits("C")
+	d := createRoomWithExits("D")
+	linkRooms(a, "east", b, "west")
+	linkRooms(b, "east", c, "west")
+	linkRooms(b, "south", d, "north")
+
+	rooms := make(map[string]*world.Room)
+	GetAllRooms(a, rooms)
+
+	if len(rooms) != 4 {
+		t.Errorf("Expected 4 rooms, got %d", len(rooms))
+	}
+	for _, name := range []string{"A", "B", "C", "D"} {
+		if _, ok := rooms[name]; !ok {
+			t.Errorf("Missing room %s", name)
+		}
+	}
+}
+
+func TestGetAllRooms_SingleRoom(t *testing.T) {
+	a := createRoomWithExits("A")
+	rooms := make(map[string]*world.Room)
+	GetAllRooms(a, rooms)
+
+	if len(rooms) != 1 {
+		t.Errorf("Expected 1 room, got %d", len(rooms))
+	}
+}
+
+func TestGetAllRooms_HandlesLoops(t *testing.T) {
+	// A--B--C--A (circular)
+	a := createRoomWithExits("A")
+	b := createRoomWithExits("B")
+	c := createRoomWithExits("C")
+	linkRooms(a, "east", b, "west")
+	linkRooms(b, "east", c, "west")
+	linkRooms(c, "east", a, "west") // creates a loop
+
+	rooms := make(map[string]*world.Room)
+	GetAllRooms(a, rooms)
+
+	if len(rooms) != 3 {
+		t.Errorf("Expected 3 rooms (no infinite loop), got %d", len(rooms))
+	}
+}
+
+// --- Look output tests ---
+
+func TestLook_ShowsDescriptionAndExits(t *testing.T) {
+	game := createSimpleLayout()
+	msg, _ := game.HandleCommand("look")
+
+	// Room B has exits west and east
+	if !strings.Contains(msg, "This is Room B.") {
+		t.Errorf("Look should show room description, got: %s", msg)
+	}
+	if !strings.Contains(msg, "Exits:") {
+		t.Errorf("Look should show exits header, got: %s", msg)
+	}
+	if !strings.Contains(msg, "- east") {
+		t.Errorf("Look should list east exit, got: %s", msg)
+	}
+	if !strings.Contains(msg, "- west") {
+		t.Errorf("Look should list west exit, got: %s", msg)
+	}
+}
+
+func TestLook_ShowsItems(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+
+	msg, _ := game.HandleCommand("l") // shortcut
+
+	if !strings.Contains(msg, "You see the following items:") {
+		t.Errorf("Look should list items when present, got: %s", msg)
+	}
+	if !strings.Contains(msg, "- test_item") {
+		t.Errorf("Look should show item name, got: %s", msg)
+	}
+}
+
+func TestLook_ExitsSorted(t *testing.T) {
+	game := createSimpleLayout()
+	msg := game.Look()
+
+	eastIdx := strings.Index(msg, "- east")
+	westIdx := strings.Index(msg, "- west")
+	if eastIdx < 0 || westIdx < 0 {
+		t.Fatalf("Expected both east and west in output, got: %s", msg)
+	}
+	if eastIdx > westIdx {
+		t.Error("Exits should be sorted alphabetically (east before west)")
+	}
+}
+
+// --- Inventory output tests ---
+
+func TestInventory_EmptyMessage(t *testing.T) {
+	game := createSimpleLayout()
+	msg, _ := game.HandleCommand("i")
+
+	if msg != "You are not carrying anything." {
+		t.Errorf("Expected empty inventory message, got: %s", msg)
+	}
+}
+
+func TestInventory_ListsItems(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+	game.HandleCommand("take test_item")
+
+	msg, _ := game.HandleCommand("inventory")
+
+	if !strings.Contains(msg, "You have the following items:") {
+		t.Errorf("Expected inventory header, got: %s", msg)
+	}
+	if !strings.Contains(msg, "- test_item") {
+		t.Errorf("Expected item in inventory list, got: %s", msg)
+	}
+}
+
+// --- Take behavior tests ---
+
+func TestTake_AutoPicksSingleItem(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"] // has exactly one item
+
+	msg, success := game.Take("")
+	if !success {
+		t.Error("Take with empty name should auto-pick the single item")
+	}
+	if !strings.Contains(msg, "You took the test_item.") {
+		t.Errorf("Expected auto-pick message, got: %s", msg)
+	}
+	if len(game.Player.Inventory) != 1 || game.Player.Inventory[0].Name != "test_item" {
+		t.Error("Item should be in player's inventory after auto-pick")
+	}
+	if len(game.Player.Location.Items) != 0 {
+		t.Error("Item should be removed from room after auto-pick")
+	}
+}
+
+func TestTake_AsksWhenMultipleItems(t *testing.T) {
+	game := createSimpleLayout()
+	game.Player.Location.Items = []*world.Item{
+		{Name: "sword", Description: "A sword."},
+		{Name: "shield", Description: "A shield."},
+	}
+
+	msg, success := game.Take("")
+	if success {
+		t.Error("Take with empty name and multiple items should fail")
+	}
+	if msg != "What do you want to take?" {
+		t.Errorf("Expected disambiguation prompt, got: %s", msg)
+	}
+}
+
+func TestTake_CaseInsensitive(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+
+	msg, success := game.Take("TEST_ITEM")
+	if !success {
+		t.Error("Take should be case-insensitive")
+	}
+	if !strings.Contains(msg, "You took the test_item.") {
+		t.Errorf("Expected success message, got: %s", msg)
+	}
+}
+
+func TestTake_ItemNotFound(t *testing.T) {
+	game := createSimpleLayout()
+	msg, success := game.Take("nonexistent")
+	if success {
+		t.Error("Take should fail for nonexistent item")
+	}
+	if msg != "You don't see that here." {
+		t.Errorf("Expected not-found message, got: %s", msg)
+	}
+}
+
+// --- HandleCommand quit/help/e tests ---
+
+func TestHandleCommand_Quit(t *testing.T) {
+	game := createSimpleLayout()
+	msg, shouldExit := game.HandleCommand("quit")
+
+	if !shouldExit {
+		t.Error("Quit should signal exit")
+	}
+	if msg != "Goodbye!" {
+		t.Errorf("Expected goodbye message, got: %s", msg)
+	}
+	if game.Turns != 0 {
+		t.Error("Quit should not increment turns")
+	}
+}
+
+func TestHandleCommand_QuitShortcut(t *testing.T) {
+	game := createSimpleLayout()
+	_, shouldExit := game.HandleCommand("q")
+
+	if !shouldExit {
+		t.Error("'q' shortcut should signal exit")
+	}
+}
+
+func TestHandleCommand_Help(t *testing.T) {
+	game := createSimpleLayout()
+	msg, shouldExit := game.HandleCommand("help")
+
+	if shouldExit {
+		t.Error("Help should not signal exit")
+	}
+	// Verify help contains the key commands players need to know
+	for _, cmd := range []string{"w,a,s,d", "take", "drop", "unlock", "score", "quit"} {
+		if !strings.Contains(msg, cmd) {
+			t.Errorf("Help should mention '%s', got: %s", cmd, msg)
+		}
+	}
+	if game.Turns != 0 {
+		t.Error("Help should not increment turns")
+	}
+}
+
+func TestHandleCommand_HelpShortcut(t *testing.T) {
+	game := createSimpleLayout()
+	msg, _ := game.HandleCommand("h")
+
+	if !strings.Contains(msg, "take") {
+		t.Errorf("'h' shortcut should show help, got: %s", msg)
+	}
+}
+
+func TestHandleCommand_E_TakesFirstItem(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+
+	msg, _ := game.HandleCommand("e")
+
+	if !strings.Contains(msg, "You took the test_item.") {
+		t.Errorf("'e' should take the first item in the room, got: %s", msg)
+	}
+	if len(game.Player.Inventory) != 1 {
+		t.Error("Item should be in inventory after 'e' command")
+	}
+}
+
+func TestHandleCommand_E_NothingToTake(t *testing.T) {
+	game := createSimpleLayout() // no items in any room
+	msg, _ := game.HandleCommand("e")
+
+	if msg != "There is nothing to take." {
+		t.Errorf("'e' in empty room should say nothing to take, got: %s", msg)
+	}
+}
+
+// --- Move tests for locked door message ---
+
+func TestMove_LockedDoorMessage(t *testing.T) {
+	game := createLayoutWithLock()
+	msg, success := game.Move("east")
+
+	if success {
+		t.Error("Moving through locked door should fail")
+	}
+	if msg != "The door is locked." {
+		t.Errorf("Expected locked door message, got: %s", msg)
+	}
+}
+
+// --- Drop behavior tests ---
+
+func TestDrop_EmptyName(t *testing.T) {
+	game := createSimpleLayout()
+	msg, success := game.Drop("")
+	if success {
+		t.Error("Drop with empty name should fail")
+	}
+	if msg != "What do you want to drop?" {
+		t.Errorf("Expected prompt, got: %s", msg)
+	}
+}
+
+func TestDrop_CaseInsensitive(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+	game.HandleCommand("take test_item")
+
+	msg, success := game.Drop("TEST_ITEM")
+	if !success {
+		t.Error("Drop should be case-insensitive")
+	}
+	if !strings.Contains(msg, "You dropped the test_item.") {
+		t.Errorf("Expected drop message, got: %s", msg)
+	}
+}
+
+func TestDrop_NotHeld(t *testing.T) {
+	game := createSimpleLayout()
+	msg, success := game.Drop("sword")
+	if success {
+		t.Error("Drop should fail for items not in inventory")
+	}
+	if msg != "You don't have that." {
+		t.Errorf("Expected not-held message, got: %s", msg)
+	}
+}
+
+// --- Unlock message tests ---
+
+func TestUnlock_NoLockedDoorMessage(t *testing.T) {
+	game := createSimpleLayout()
+	msg, _, _ := game.Unlock()
+	if msg != "There is nothing to unlock here." {
+		t.Errorf("Expected no-locked-door message, got: %s", msg)
+	}
+}
+
+func TestUnlock_NoKeyMessage(t *testing.T) {
+	game := createLayoutWithLock()
+	msg, _, _ := game.Unlock()
+	if msg != "You don't have the key." {
+		t.Errorf("Expected no-key message, got: %s", msg)
+	}
+}
+
+func TestUnlock_SuccessMessage(t *testing.T) {
+	game := createLayoutWithLock()
+	game.HandleCommand("go west")
+	game.HandleCommand("take key")
+	game.HandleCommand("go east")
+
+	msg, success, shouldExit := game.Unlock()
+	if !success {
+		t.Error("Unlock with key should succeed")
+	}
+	if shouldExit {
+		t.Error("Unlock of non-treasure room should not exit")
+	}
+	if msg != "You unlocked the door." {
+		t.Errorf("Expected unlock message, got: %s", msg)
+	}
+}
+
+// --- Helper functions for these tests ---
+
+func createRoomWithExits(name string) *world.Room {
+	return &world.Room{Name: name, Description: "This is " + name + ".", Exits: make(map[string]*world.Exit)}
+}
+
+func linkRooms(a *world.Room, dirAB string, b *world.Room, dirBA string) {
+	a.Exits[dirAB] = &world.Exit{Room: b}
+	b.Exits[dirBA] = &world.Exit{Room: a}
 }
 
 func TestUnlock_WinCondition(t *testing.T) {
