@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -11,6 +14,8 @@ import (
 	"text-adventure-v2/game"
 	"text-adventure-v2/renderer"
 )
+
+var debugMode = flag.Bool("debug", false, "enable debug logging to debug.log")
 
 var (
 	hudStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))                                           // blue
@@ -23,12 +28,14 @@ var (
 )
 
 const helpText = "w,a,s,d: move | e: take | u: unlock | i: inventory | h: help | q: quit"
+const maxLogLines = 5
 
 type model struct {
 	game      *game.Game
 	textInput textinput.Model
-	message   string
+	messages  []string
 	won       bool
+	debugLog  *log.Logger
 }
 
 func initialModel() model {
@@ -37,14 +44,87 @@ func initialModel() model {
 	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("14")) // cyan prompt
 	ti.Focus()
 
-	return model{
-		game:      game.NewGame(),
+	g := game.NewGame()
+
+	m := model{
+		game:      g,
 		textInput: ti,
 	}
+
+	if *debugMode {
+		f, err := os.Create("debug.log")
+		if err == nil {
+			m.debugLog = log.New(f, "", log.LstdFlags)
+			logStartupState(m.debugLog, g)
+		}
+	}
+
+	return m
+}
+
+func logStartupState(dl *log.Logger, g *game.Game) {
+	// Log all rooms and their connections
+	names := make([]string, 0, len(g.AllRooms))
+	for name := range g.AllRooms {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		room := g.AllRooms[name]
+		var conns []string
+		for dir, exit := range room.Exits {
+			conns = append(conns, fmt.Sprintf("%s: %s", dir, exit.Room.Name))
+		}
+		sort.Strings(conns)
+		dl.Printf("[MAP] %s -> %s", name, strings.Join(conns, ", "))
+
+		// Log items in this room
+		for _, item := range room.Items {
+			dl.Printf("[ITEM] %s in %s", item.Name, name)
+		}
+
+		// Log locked exits
+		for dir, exit := range room.Exits {
+			if exit.Locked {
+				dl.Printf("[LOCK] %s -> %s (locked)", name, dir)
+			}
+		}
+	}
+
+	dl.Printf("[START] %s", g.Player.Location.Name)
 }
 
 func (m model) Init() tea.Cmd {
 	return textinput.Blink
+}
+
+func (m *model) handleCommand(command string) {
+	scoreBefore := m.game.Score()
+	roomBefore := m.game.Player.Location.Name
+
+	response, shouldExit := m.game.HandleCommand(command)
+
+	if m.debugLog != nil {
+		m.debugLog.Printf("[CMD] t=%d room=%q cmd=%q", m.game.Turns, roomBefore, command)
+		if response != "" {
+			m.debugLog.Printf("[RSP] %s", response)
+		} else {
+			m.debugLog.Printf("[RSP] (empty — moved to %q)", m.game.Player.Location.Name)
+		}
+		if newScore := m.game.Score(); newScore != scoreBefore {
+			m.debugLog.Printf("[SCORE] %d -> %d", scoreBefore, newScore)
+		}
+	}
+
+	if response != "" {
+		m.messages = append(m.messages, response)
+	}
+	if shouldExit {
+		m.won = true
+		if m.debugLog != nil {
+			m.debugLog.Printf("[WIN] Player won in %d turns with score %d", m.game.Turns, m.game.Score())
+		}
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -61,12 +141,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			command := m.textInput.Value()
 			if command != "" {
-				response, shouldExit := m.game.HandleCommand(command)
-				m.message = response
+				m.handleCommand(command)
 				m.textInput.Reset()
-				if shouldExit {
-					m.won = true
-				}
 			}
 			return m, nil
 
@@ -76,11 +152,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				key := msg.String()
 				switch key {
 				case "w", "a", "s", "d", "e", "i", "u", "h", "q":
-					response, shouldExit := m.game.HandleCommand(key)
-					m.message = response
-					if shouldExit {
-						m.won = true
-					}
+					m.handleCommand(key)
 					return m, nil
 				}
 			}
@@ -104,9 +176,13 @@ func (m model) highlightItems(s string) string {
 
 func (m model) View() string {
 	if m.won {
+		lastMsg := ""
+		if len(m.messages) > 0 {
+			lastMsg = m.messages[len(m.messages)-1]
+		}
 		return winStyle.Render(fmt.Sprintf(
 			"%s\n\nTotal Turns: %d\nFinal Score: %d\n\nPress any key to exit.",
-			m.message, m.game.Turns, m.game.Score(),
+			lastMsg, m.game.Turns, m.game.Score(),
 		))
 	}
 
@@ -121,7 +197,16 @@ func (m model) View() string {
 	hudStr := hudStyle.Render(renderer.RenderHUD(mapView))
 	mapStr := mapStyle.Render(renderer.RenderMap(mapView))
 	lookStr := lookStyle.Render(m.highlightItems(m.game.Look()))
-	msgStr := msgStyle.Render(m.highlightItems(m.message))
+	// Show last N messages as a scrolling log
+	start := 0
+	if len(m.messages) > maxLogLines {
+		start = len(m.messages) - maxLogLines
+	}
+	logLines := make([]string, 0, maxLogLines)
+	for _, msg := range m.messages[start:] {
+		logLines = append(logLines, m.highlightItems(msg))
+	}
+	msgStr := msgStyle.Render(strings.Join(logLines, "\n"))
 	inputStr := m.textInput.View()
 
 	helpStr := helpStyle.Render(helpText)
@@ -130,6 +215,7 @@ func (m model) View() string {
 }
 
 func main() {
+	flag.Parse()
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
