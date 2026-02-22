@@ -24,7 +24,7 @@ This list focuses on adding new gameplay mechanics and content to make the game 
     *   **Size**: Medium
     *   **Goal**: Introduce basic enemies and an `attack` command. This adds a new dimension of challenge, risk, and reward to exploration.
 
-5.  **A Scrolling Message Log**
+5.  ~~**A Scrolling Message Log**~~ ✅
     *   **Size**: Small
     *   **Goal**: Display a short history of the last few messages on screen to prevent players from missing important information.
 
