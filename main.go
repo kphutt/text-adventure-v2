@@ -35,7 +35,6 @@ type model struct {
 	textInput textinput.Model
 	messages  []string
 	won       bool
-	debugLog  *log.Logger
 }
 
 func initialModel() model {
@@ -46,24 +45,17 @@ func initialModel() model {
 
 	g := game.NewGame()
 
-	m := model{
+	if *debugMode {
+		logStartupState(g)
+	}
+
+	return model{
 		game:      g,
 		textInput: ti,
 	}
-
-	if *debugMode {
-		f, err := os.Create("debug.log")
-		if err == nil {
-			m.debugLog = log.New(f, "", log.LstdFlags)
-			logStartupState(m.debugLog, g)
-		}
-	}
-
-	return m
 }
 
-func logStartupState(dl *log.Logger, g *game.Game) {
-	// Log all rooms and their connections
+func logStartupState(g *game.Game) {
 	names := make([]string, 0, len(g.AllRooms))
 	for name := range g.AllRooms {
 		names = append(names, name)
@@ -76,22 +68,20 @@ func logStartupState(dl *log.Logger, g *game.Game) {
 			conns = append(conns, fmt.Sprintf("%s: %s", dir, exit.Room.Name))
 		}
 		sort.Strings(conns)
-		dl.Printf("[MAP] %s -> %s", name, strings.Join(conns, ", "))
+		log.Printf("[MAP] %s -> %s", name, strings.Join(conns, ", "))
 
-		// Log items in this room
 		for _, item := range room.Items {
-			dl.Printf("[ITEM] %s in %s", item.Name, name)
+			log.Printf("[ITEM] %s in %s", item.Name, name)
 		}
 
-		// Log locked exits
 		for dir, exit := range room.Exits {
 			if exit.Locked {
-				dl.Printf("[LOCK] %s -> %s (locked)", name, dir)
+				log.Printf("[LOCK] %s -> %s (locked)", name, dir)
 			}
 		}
 	}
 
-	dl.Printf("[START] %s", g.Player.Location.Name)
+	log.Printf("[START] %s", g.Player.Location.Name)
 }
 
 func (m model) Init() tea.Cmd {
@@ -104,15 +94,15 @@ func (m *model) handleCommand(command string) {
 
 	response, shouldExit := m.game.HandleCommand(command)
 
-	if m.debugLog != nil {
-		m.debugLog.Printf("[CMD] t=%d room=%q cmd=%q", m.game.Turns, roomBefore, command)
+	if *debugMode {
+		log.Printf("[CMD] t=%d room=%q cmd=%q", m.game.Turns, roomBefore, command)
 		if response != "" {
-			m.debugLog.Printf("[RSP] %s", response)
+			log.Printf("[RSP] %s", response)
 		} else {
-			m.debugLog.Printf("[RSP] (empty — moved to %q)", m.game.Player.Location.Name)
+			log.Printf("[RSP] (empty — moved to %q)", m.game.Player.Location.Name)
 		}
 		if newScore := m.game.Score(); newScore != scoreBefore {
-			m.debugLog.Printf("[SCORE] %d -> %d", scoreBefore, newScore)
+			log.Printf("[SCORE] %d -> %d", scoreBefore, newScore)
 		}
 	}
 
@@ -121,8 +111,8 @@ func (m *model) handleCommand(command string) {
 	}
 	if shouldExit {
 		m.won = true
-		if m.debugLog != nil {
-			m.debugLog.Printf("[WIN] Player won in %d turns with score %d", m.game.Turns, m.game.Score())
+		if *debugMode {
+			log.Printf("[WIN] Player won in %d turns with score %d", m.game.Turns, m.game.Score())
 		}
 	}
 }
@@ -216,6 +206,16 @@ func (m model) View() string {
 
 func main() {
 	flag.Parse()
+	if *debugMode {
+		// Truncate before opening — tea.LogToFile appends, but we want a fresh log each run
+		os.Truncate("debug.log", 0)
+		f, err := tea.LogToFile("debug.log", "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating debug log: %v\n", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+	}
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
