@@ -9,10 +9,10 @@ import (
 // MapView contains all the necessary data for the renderer to draw the map.
 // It acts as a decoupled view model for the rendering engine.
 type MapView struct {
-	AllRooms          map[string]*world.Room
-	PlayerLocation    *world.Room
+	AllRooms            map[string]*world.Room
+	PlayerLocation      *world.Room
 	CurrentLocationName string
-	TurnsTaken        int
+	TurnsTaken          int
 }
 
 // RenderMap takes a MapView and produces an ASCII string representation of the map.

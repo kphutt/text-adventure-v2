@@ -37,7 +37,7 @@ func validateWorld(startRoom *world.Room, allRooms map[string]*world.Room) error
 	if err != nil {
 		return errors.New("validator: could not find a path from start to treasure (ignoring locks)")
 	}
-	
+
 	// Test 3: Is there really no path to the treasure room if locks are considered?
 	// This ensures the door is actually blocking the path.
 	_, err = validatorBfs(startRoom, treasureRoom, false)
@@ -47,7 +47,6 @@ func validateWorld(startRoom *world.Room, allRooms map[string]*world.Room) error
 
 	return nil
 }
-
 
 // validatorBfs finds if a path exists between two rooms.
 func validatorBfs(start, end *world.Room, ignoreLocks bool) ([]*world.Room, error) {

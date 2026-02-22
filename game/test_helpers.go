@@ -15,7 +15,7 @@ func createSimpleLayout() *Game {
 	roomB.Exits["west"] = &world.Exit{Room: roomA}
 	roomB.Exits["east"] = &world.Exit{Room: roomC}
 	roomC.Exits["west"] = &world.Exit{Room: roomB}
-	
+
 	player := &world.Player{
 		Name:     "Test Player",
 		Location: roomB,

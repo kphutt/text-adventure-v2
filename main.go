@@ -36,10 +36,10 @@ func main() {
 
 		// Create the view model for the renderer
 		mapView := renderer.MapView{
-			AllRooms:          g.AllRooms,
-			PlayerLocation:    g.Player.Location,
+			AllRooms:            g.AllRooms,
+			PlayerLocation:      g.Player.Location,
 			CurrentLocationName: g.Player.Location.Name,
-			TurnsTaken:        g.Turns,
+			TurnsTaken:          g.Turns,
 		}
 
 		// Render the HUD and Map
@@ -59,13 +59,13 @@ func main() {
 			drawText(screen, 0, y, tcell.StyleDefault, line)
 			y++
 		}
-		
+
 		y++
 		for _, line := range strings.Split(g.Look(), "\n") {
 			drawText(screen, 0, y, tcell.StyleDefault, line)
 			y++
 		}
-		
+
 		drawText(screen, 0, y, tcell.StyleDefault, message)
 		y++
 		drawText(screen, 0, y, tcell.StyleDefault, "> "+inputStr)

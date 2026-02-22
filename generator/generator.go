@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"text-adventure-v2/world"
 	"fmt"
+	"text-adventure-v2/world"
 )
 
 // Config holds the parameters for map generation.

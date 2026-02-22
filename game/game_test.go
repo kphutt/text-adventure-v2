@@ -75,7 +75,7 @@ func TestTakeAndDrop(t *testing.T) {
 	}
 
 	// Move player to the room with the item
-	game.Player.Location = game.AllRooms["Room A"] 
+	game.Player.Location = game.AllRooms["Room A"]
 
 	// Test taking an item that exists (should increment turn)
 	game.HandleCommand("take test_item")
@@ -145,7 +145,7 @@ func TestUnlock(t *testing.T) {
 	}
 
 	// Go back to unlock
-	game.HandleCommand("go east")  // Turn 3
+	game.HandleCommand("go east") // Turn 3
 	game.HandleCommand("u")       // Turn 4 (successful unlock)
 	if game.Turns != 4 {
 		t.Errorf("Expected 4 turns after successful unlock, got %d", game.Turns)

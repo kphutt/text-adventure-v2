@@ -47,7 +47,7 @@ func GetAllRooms(room *world.Room, rooms map[string]*world.Room) {
 // HandleCommand processes a player command and updates the game state.
 func (g *Game) HandleCommand(command string) (string, bool) {
 	verb, noun := ParseInput(strings.ToLower(command))
-	
+
 	var msg string
 	var success, shouldExit bool
 
@@ -126,7 +126,7 @@ func (g *Game) Move(direction string) (string, bool) {
 			return "The door is locked.", false
 		}
 		g.Player.Location = exit.Room
-		return "", true 
+		return "", true
 	}
 	return "You can't go that way.", false
 }

@@ -31,7 +31,7 @@ func TestWinCondition(t *testing.T) {
 	if shouldExit {
 		t.Fatal("Moving back to the door should not end the game.")
 	}
-	
+
 	// 5. Unlock the final door
 	msg, shouldExit := game.HandleCommand("u")
 

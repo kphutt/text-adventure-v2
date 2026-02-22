@@ -66,11 +66,11 @@ func placePuzzles(config Config, startRoom *world.Room, allRooms map[string]*wor
 // findLongestPath uses BFS to find the longest path from the start room to any other room.
 func findLongestPath(start *world.Room, allRooms map[string]*world.Room) ([]*world.Room, error) {
 	var longestPath []*world.Room
-	
+
 	for _, room := range allRooms {
-        if room == start {
-            continue
-        }
+		if room == start {
+			continue
+		}
 
 		path, err := bfs(start, room)
 		if err != nil {
@@ -84,10 +84,9 @@ func findLongestPath(start *world.Room, allRooms map[string]*world.Room) ([]*wor
 	if len(longestPath) == 0 {
 		return nil, errors.New("could not find any path from the start room")
 	}
-	
+
 	return longestPath, nil
 }
-
 
 // bfs finds the shortest path between two rooms.
 func bfs(start, end *world.Room) ([]*world.Room, error) {
