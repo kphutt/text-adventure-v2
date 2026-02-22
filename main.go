@@ -40,6 +40,7 @@ func main() {
 			PlayerLocation:      g.Player.Location,
 			CurrentLocationName: g.Player.Location.Name,
 			TurnsTaken:          g.Turns,
+			Score:               g.Score(),
 		}
 
 		// Render the HUD and Map

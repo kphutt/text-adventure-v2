@@ -13,6 +13,7 @@ type MapView struct {
 	PlayerLocation      *world.Room
 	CurrentLocationName string
 	TurnsTaken          int
+	Score               int
 }
 
 // RenderMap takes a MapView and produces an ASCII string representation of the map.
@@ -62,6 +63,7 @@ func RenderHUD(view MapView) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("Location: %s\n", view.CurrentLocationName))
 	b.WriteString(fmt.Sprintf("Turns: %d\n", view.TurnsTaken))
+	b.WriteString(fmt.Sprintf("Score: %d\n", view.Score))
 	b.WriteString(strings.Repeat("-", 50)) // A separator line
 	return b.String()
 }

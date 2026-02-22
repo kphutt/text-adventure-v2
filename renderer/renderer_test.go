@@ -71,14 +71,34 @@ func TestRenderHUD(t *testing.T) {
 	view := MapView{
 		CurrentLocationName: "Test Room",
 		TurnsTaken:          42,
+		Score:               75,
 	}
 
 	actual := RenderHUD(view)
 	expected := "Location: Test Room\n" +
 		"Turns: 42\n" +
+		"Score: 75\n" +
 		"--------------------------------------------------"
 
 	if actual != expected {
 		t.Errorf("RenderHUD failed.\nExpected:\n%s\nGot:\n%s", expected, actual)
+	}
+}
+
+func TestRenderHUD_ZeroScore(t *testing.T) {
+	view := MapView{
+		CurrentLocationName: "Start",
+		TurnsTaken:          0,
+		Score:               5,
+	}
+
+	actual := RenderHUD(view)
+	expected := "Location: Start\n" +
+		"Turns: 0\n" +
+		"Score: 5\n" +
+		"--------------------------------------------------"
+
+	if actual != expected {
+		t.Errorf("RenderHUD_ZeroScore failed.\nExpected:\n%s\nGot:\n%s", expected, actual)
 	}
 }
