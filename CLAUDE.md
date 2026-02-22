@@ -35,6 +35,16 @@ go run .             # play the game (interactive TUI, needs a real terminal)
 - `github.com/charmbracelet/bubbles` — text input component
 - `github.com/charmbracelet/lipgloss` — styling/layout
 
+## Design docs
+
+Design documents live in `docs/design/`. Convention:
+
+- `backlog.md` — Ideas not yet tied to an initiative (short paragraphs)
+- `{initiative}/brainstorm.md` — Exploration, specs, open questions, code impact
+- `{initiative}/decisions.md` — Settled choices (extracted from brainstorm, append-only)
+
+Lifecycle: backlog item → initiative folder with brainstorm → decisions extracted as they're made.
+
 ## Testing notes
 - Tests live in `game/*_test.go`, `generator/generator_test.go`, `renderer/renderer_test.go`.
 - Test helpers in `game/test_helpers.go` build specific world layouts (simple, items, locks, win).
