@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"text-adventure-v2/generator"
 	"text-adventure-v2/world"
@@ -109,7 +110,12 @@ func (g *Game) Look() string {
 		}
 	}
 	b.WriteString("Exits:\n")
+	dirs := make([]string, 0, len(g.Player.Location.Exits))
 	for dir := range g.Player.Location.Exits {
+		dirs = append(dirs, dir)
+	}
+	sort.Strings(dirs)
+	for _, dir := range dirs {
 		fmt.Fprintf(&b, "- %s\n", dir)
 	}
 	return b.String()

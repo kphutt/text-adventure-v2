@@ -24,8 +24,8 @@ func placePuzzles(config Config, startRoom *world.Room, allRooms map[string]*wor
 	treasureRoom.Description = "You have found the treasure room! A large chest sits in the center."
 	treasureRoom.Items = append(treasureRoom.Items, &world.Item{Name: "treasure", Description: "A chest full of gold!"})
 
-	// Place the locked door in the middle of the path.
-	doorIndex := len(path) / 2
+	// Place the locked door right before the treasure room.
+	doorIndex := len(path) - 2
 	doorRoom := path[doorIndex]
 	nextRoomInPath := path[doorIndex+1]
 	for _, exit := range doorRoom.Exits {

@@ -2,123 +2,137 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"text-adventure-v2/game"
 	"text-adventure-v2/renderer"
 )
 
-func drawText(s tcell.Screen, x, y int, style tcell.Style, text string) {
-	for i, r := range text {
-		s.SetContent(x+i, y, r, nil, style)
+var (
+	hudStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))                                           // blue
+	mapStyle  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).BorderForeground(lipgloss.Color("63")) // purple border
+	helpStyle = lipgloss.NewStyle().Faint(true)
+	lookStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))                                                                                                // soft white
+	msgStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))                                                                                                // pink
+	itemStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("220"))                                                                                     // gold
+	winStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10")).Border(lipgloss.DoubleBorder()).Padding(1, 3).BorderForeground(lipgloss.Color("11")) // green + gold border
+)
+
+const helpText = "w,a,s,d: move | e: take | u: unlock | i: inventory | h: help | q: quit"
+
+type model struct {
+	game      *game.Game
+	textInput textinput.Model
+	message   string
+	won       bool
+}
+
+func initialModel() model {
+	ti := textinput.New()
+	ti.Prompt = "> "
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("14")) // cyan prompt
+	ti.Focus()
+
+	return model{
+		game:      game.NewGame(),
+		textInput: ti,
 	}
 }
 
-func main() {
-	screen, err := tcell.NewScreen()
-	if err != nil {
-		panic(err)
-	}
-	if err := screen.Init(); err != nil {
-		panic(err)
-	}
-	screen.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
-	screen.EnableMouse()
-	defer screen.Fini()
+func (m model) Init() tea.Cmd {
+	return textinput.Blink
+}
 
-	g := game.NewGame()
-	inputStr := ""
-	message := ""
-
-	for {
-		screen.Clear()
-
-		// Create the view model for the renderer
-		mapView := renderer.MapView{
-			AllRooms:            g.AllRooms,
-			PlayerLocation:      g.Player.Location,
-			CurrentLocationName: g.Player.Location.Name,
-			TurnsTaken:          g.Turns,
-			Score:               g.Score(),
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if m.won {
+			return m, tea.Quit
 		}
 
-		// Render the HUD and Map
-		hudString := renderer.RenderHUD(mapView)
-		mapString := renderer.RenderMap(mapView)
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
+			return m, tea.Quit
 
-		y := 0
-
-		// Draw the HUD
-		for _, line := range strings.Split(hudString, "\n") {
-			drawText(screen, 0, y, tcell.StyleDefault, line)
-			y++
-		}
-
-		// Draw the Map
-		for _, line := range strings.Split(mapString, "\n") {
-			drawText(screen, 0, y, tcell.StyleDefault, line)
-			y++
-		}
-
-		y++
-		for _, line := range strings.Split(g.Look(), "\n") {
-			drawText(screen, 0, y, tcell.StyleDefault, line)
-			y++
-		}
-
-		drawText(screen, 0, y, tcell.StyleDefault, message)
-		y++
-		drawText(screen, 0, y, tcell.StyleDefault, "> "+inputStr)
-		screen.Show()
-
-		ev := screen.PollEvent()
-		switch ev := ev.(type) {
-		case *tcell.EventKey:
-			var shouldExit bool // This should be defined once
-			var command string
-
-			switch ev.Key() {
-			case tcell.KeyEscape:
-				return
-			case tcell.KeyEnter:
-				command = inputStr
-				inputStr = ""
-			case tcell.KeyBackspace, tcell.KeyBackspace2:
-				if len(inputStr) > 0 {
-					inputStr = inputStr[:len(inputStr)-1]
-				}
-			case tcell.KeyRune:
-				// Only intercept instant commands when not mid-typing
-				if inputStr == "" {
-					switch ev.Rune() {
-					case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
-						command = string(ev.Rune())
-					default:
-						inputStr += string(ev.Rune())
-					}
-				} else {
-					inputStr += string(ev.Rune())
-				}
-			}
-
-			if command != "" { // Process command if one was entered
-				message, shouldExit = g.HandleCommand(command)
+		case tea.KeyEnter:
+			command := m.textInput.Value()
+			if command != "" {
+				response, shouldExit := m.game.HandleCommand(command)
+				m.message = response
+				m.textInput.Reset()
 				if shouldExit {
-					screen.Clear()
-					winMessage := fmt.Sprintf("%s\n\nTotal Turns: %d", message, g.Turns)
-					drawText(screen, 0, 0, tcell.StyleDefault, winMessage)
-					drawText(screen, 0, 3, tcell.StyleDefault, "Press any key to exit.")
-					screen.Show()
-					// wait for any key press
-					for {
-						ev := screen.PollEvent()
-						if _, ok := ev.(*tcell.EventKey); ok {
-							return
-						}
+					m.won = true
+				}
+			}
+			return m, nil
+
+		default:
+			// Instant commands when input is empty
+			if m.textInput.Value() == "" {
+				key := msg.String()
+				switch key {
+				case "w", "a", "s", "d", "e", "i", "u", "h", "q":
+					response, shouldExit := m.game.HandleCommand(key)
+					m.message = response
+					if shouldExit {
+						m.won = true
 					}
+					return m, nil
 				}
 			}
 		}
+	}
+
+	var cmd tea.Cmd
+	m.textInput, cmd = m.textInput.Update(msg)
+	return m, cmd
+}
+
+func (m model) highlightItems(s string) string {
+	for _, item := range m.game.Player.Location.Items {
+		s = strings.ReplaceAll(s, item.Name, itemStyle.Render(item.Name))
+	}
+	for _, item := range m.game.Player.Inventory {
+		s = strings.ReplaceAll(s, item.Name, itemStyle.Render(item.Name))
+	}
+	return s
+}
+
+func (m model) View() string {
+	if m.won {
+		return winStyle.Render(fmt.Sprintf(
+			"%s\n\nTotal Turns: %d\nFinal Score: %d\n\nPress any key to exit.",
+			m.message, m.game.Turns, m.game.Score(),
+		))
+	}
+
+	mapView := renderer.MapView{
+		AllRooms:            m.game.AllRooms,
+		PlayerLocation:      m.game.Player.Location,
+		CurrentLocationName: m.game.Player.Location.Name,
+		TurnsTaken:          m.game.Turns,
+		Score:               m.game.Score(),
+	}
+
+	hudStr := hudStyle.Render(renderer.RenderHUD(mapView))
+	mapStr := mapStyle.Render(renderer.RenderMap(mapView))
+	lookStr := lookStyle.Render(m.highlightItems(m.game.Look()))
+	msgStr := msgStyle.Render(m.highlightItems(m.message))
+	inputStr := m.textInput.View()
+
+	helpStr := helpStyle.Render(helpText)
+
+	return lipgloss.JoinVertical(lipgloss.Left, hudStr, helpStr, mapStr, lookStr, msgStr, inputStr)
+}
+
+func main() {
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 }
