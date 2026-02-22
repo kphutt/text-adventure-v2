@@ -46,7 +46,7 @@ This list focuses on internal refactoring projects to make the codebase more mod
     *   **Size**: Small
     *   **Goal**: Replace the large `switch` statement in the game engine with dedicated "command objects." This will make adding new game verbs (like `use`, `talk`, `attack`) much cleaner.
 
-2.  **Implement the New Map Visuals**
+2.  ~~**Implement the New Map Visuals**~~ ✅
     *   **Size**: Medium
     *   **Goal**: Upgrade the `renderer` to use the advanced "Tiled Grid" ASCII art style we designed. This is a major visual and user experience enhancement.
 
