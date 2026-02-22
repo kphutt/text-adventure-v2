@@ -37,11 +37,11 @@ func buildWorld(config Config) (*world.Room, map[string]*world.Room, error) {
 		var created bool
 		for !created {
 			// Pick a random existing room to branch off from
-			var randomRoom *world.Room
+			roomList := make([]*world.Room, 0, len(allRooms))
 			for _, r := range allRooms {
-				randomRoom = r
-				break
+				roomList = append(roomList, r)
 			}
+			randomRoom := roomList[rand.Intn(len(roomList))]
 
 			// Pick a random direction
 			dirs := []string{"north", "south", "east", "west"}

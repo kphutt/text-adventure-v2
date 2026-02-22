@@ -89,11 +89,15 @@ func main() {
 					inputStr = inputStr[:len(inputStr)-1]
 				}
 			case tcell.KeyRune:
-				// Only if not a special command (w,a,s,d,e,i,u,h,q)
-				switch ev.Rune() {
-				case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
-					command = string(ev.Rune())
-				default:
+				// Only intercept instant commands when not mid-typing
+				if inputStr == "" {
+					switch ev.Rune() {
+					case 'w', 'a', 's', 'd', 'e', 'i', 'u', 'h', 'q':
+						command = string(ev.Rune())
+					default:
+						inputStr += string(ev.Rune())
+					}
+				} else {
 					inputStr += string(ev.Rune())
 				}
 			}
