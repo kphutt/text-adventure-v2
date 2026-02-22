@@ -161,6 +161,66 @@ func TestUnlock(t *testing.T) {
 	}
 }
 
+func TestScore_EmptyInventoryOneRoom(t *testing.T) {
+	game := createSimpleLayout()
+	score := game.Score()
+	if score != 5 {
+		t.Errorf("Expected score 5 (one room visited), got %d", score)
+	}
+}
+
+func TestScore_AfterVisitingMultipleRooms(t *testing.T) {
+	game := createSimpleLayout()
+	// Start in Room B (1 room visited = 5)
+	if game.Score() != 5 {
+		t.Errorf("Expected score 5 at start, got %d", game.Score())
+	}
+	// Move to Room A (2 rooms visited = 10)
+	game.HandleCommand("go west")
+	if game.Score() != 10 {
+		t.Errorf("Expected score 10 after visiting 2 rooms, got %d", game.Score())
+	}
+	// Move back to Room B (still 2 unique rooms = 10)
+	game.HandleCommand("go east")
+	if game.Score() != 10 {
+		t.Errorf("Expected score 10 after revisiting Room B, got %d", game.Score())
+	}
+	// Move to Room C (3 rooms visited = 15)
+	game.HandleCommand("go east")
+	if game.Score() != 15 {
+		t.Errorf("Expected score 15 after visiting 3 rooms, got %d", game.Score())
+	}
+}
+
+func TestScore_Command(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+	game.HandleCommand("take test_item")
+
+	msg, shouldExit := game.HandleCommand("score")
+	if shouldExit {
+		t.Error("Score command should not exit the game")
+	}
+	if !strings.Contains(msg, "15") {
+		t.Errorf("Expected score message to contain '15', got '%s'", msg)
+	}
+	// Score command should not increment turns
+	if game.Turns != 1 {
+		t.Errorf("Score command should not increment turns. Expected 1, got %d", game.Turns)
+	}
+}
+
+func TestScore_WithInventoryItems(t *testing.T) {
+	game := createLayoutWithItems()
+	game.Player.Location = game.AllRooms["Room A"]
+	game.HandleCommand("take test_item")
+	score := game.Score()
+	// 10 points for 1 item + 5 points for 1 room visited = 15
+	if score != 15 {
+		t.Errorf("Expected score 15 (1 item + 1 room), got %d", score)
+	}
+}
+
 func TestUnlock_WinCondition(t *testing.T) {
 	game := createLayoutWithWinCondition()
 

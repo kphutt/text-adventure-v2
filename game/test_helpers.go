@@ -28,8 +28,9 @@ func createSimpleLayout() *Game {
 	}
 
 	return &Game{
-		Player:   player,
-		AllRooms: allRooms,
+		Player:       player,
+		AllRooms:     allRooms,
+		VisitedRooms: map[string]bool{roomB.Name: true},
 	}
 }
 
@@ -58,8 +59,9 @@ func createLayoutWithItems() *Game {
 	}
 
 	return &Game{
-		Player:   player,
-		AllRooms: allRooms,
+		Player:       player,
+		AllRooms:     allRooms,
+		VisitedRooms: map[string]bool{roomB.Name: true},
 	}
 }
 
@@ -92,8 +94,9 @@ func createLayoutWithLock() *Game {
 	}
 
 	return &Game{
-		Player:   player,
-		AllRooms: allRooms,
+		Player:       player,
+		AllRooms:     allRooms,
+		VisitedRooms: map[string]bool{roomB.Name: true},
 	}
 }
 
@@ -126,7 +129,8 @@ func createLayoutWithWinCondition() *Game {
 	}
 
 	return &Game{
-		Player:   player,
-		AllRooms: allRooms,
+		Player:       player,
+		AllRooms:     allRooms,
+		VisitedRooms: map[string]bool{roomB.Name: true},
 	}
 }

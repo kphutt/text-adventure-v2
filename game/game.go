@@ -26,10 +26,11 @@ func NewGame() *Game {
 	}
 
 	return &Game{
-		Player:   player,
-		AllRooms: allRooms,
-		IsWon:    false,
-		Turns:    0,
+		Player:       player,
+		AllRooms:     allRooms,
+		IsWon:        false,
+		Turns:        0,
+		VisitedRooms: map[string]bool{startRoom.Name: true},
 	}
 }
 
@@ -55,11 +56,13 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 	case "quit", "q":
 		return "Goodbye!", true
 	case "help", "h":
-		return "Instant Commands: w,a,s,d (move), e (take), i (inventory), u (unlock), l (look), q (quit)\nTyped Commands: go [dir], take [item], drop [item], unlock, help, quit", false
+		return "Instant Commands: w,a,s,d (move), e (take), i (inventory), u (unlock), l (look), q (quit)\nTyped Commands: go [dir], take [item], drop [item], unlock, score, help, quit", false
 	case "look", "l":
 		return g.Look(), false
 	case "inventory", "i":
 		return g.Inventory(), false
+	case "score":
+		return fmt.Sprintf("Score: %d", g.Score()), false
 	case "go":
 		msg, success = g.Move(noun)
 	case "w", "a", "s", "d":
@@ -87,6 +90,12 @@ func (g *Game) HandleCommand(command string) (string, bool) {
 	}
 
 	return msg, shouldExit
+}
+
+// Score returns the player's current score.
+// 10 points per inventory item, 5 points per room visited.
+func (g *Game) Score() int {
+	return len(g.Player.Inventory)*10 + len(g.VisitedRooms)*5
 }
 
 // Look returns the description of the player's current location.
@@ -126,6 +135,7 @@ func (g *Game) Move(direction string) (string, bool) {
 			return "The door is locked.", false
 		}
 		g.Player.Location = exit.Room
+		g.VisitedRooms[exit.Room.Name] = true
 		return "", true
 	}
 	return "You can't go that way.", false
