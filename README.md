@@ -1,6 +1,6 @@
 # Go Text Adventure Game
 
-[![Go Version](https://img.shields.io/badge/go-1.25-blue.svg)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/go-1.25-blue.svg)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A simple, terminal-based text adventure game written in Go, now featuring procedurally generated and unique worlds for endless replayability!
@@ -37,6 +37,21 @@ A simple, terminal-based text adventure game written in Go, now featuring proced
 The goal of the game is to find the key, unlock the door, and reach the treasure room!
 
 Good luck, adventurer!
+
+## The Engineering Problem
+
+Procedural generation often produces unsolvable states — a locked door with no key, a room with no exits, a treasure behind a wall you can't reach. The generator must produce worlds that are always winnable without constraining them into boring layouts.
+
+## Generation Guarantees
+
+Every generated world is validated before the game starts. The generator runs BFS-based checks (`generator/validator.go`, 12 tests) that enforce:
+
+- **Solvability** — the key is reachable from the start room
+- **Key-before-lock ordering** — the key is always placed before the locked door on the critical path (`generator/puzzler.go`)
+- **Treasure is locked** — the treasure room is unreachable without first obtaining the key
+- **Connected traversal** — all rooms on the critical path are reachable via BFS
+
+If validation fails, the world is regenerated. See [DESIGN.md](DESIGN.md) for the full constraint model.
 
 ## Design Details and Architecture
 
