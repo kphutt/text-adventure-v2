@@ -1,5 +1,7 @@
 # Combat Initiative: Development Backlog
 
+**Author**: Karsten Huttelmaier — co-authored with Claude
+
 ## Context
 
 The combat system is the most ambitious feature on the roadmap (item #4). It's not one project — it's an initiative spanning multiple projects, each building on the last. This document breaks the initiative into **bite-sized phases** that can each go through their own requirements → design → implement cycle without overwhelming context.

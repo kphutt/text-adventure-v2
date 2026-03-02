@@ -1,5 +1,7 @@
 # The 10 Design Principles
 
+**Author**: Karsten Huttelmaier — co-authored with Claude
+
 These aren't guidelines. They're laws. When we're stuck on an implementation decision, we come back here.
 
 ---

@@ -1,5 +1,7 @@
 # Phase 1 Execution Plan: The Pixel Canvas (`pixelbuf/`)
 
+**Author**: Karsten Huttelmaier — co-authored with Claude
+
 ## Context
 
 This is the foundational rendering package for the combat initiative. Every visual element in combat — player, enemy, arena, particles, health bars — ultimately becomes pixels in a buffer rendered to the terminal via half-block characters (`▀`/`▄`) with ANSI 24-bit true color. This package is Phase 1 because nothing visual can exist without it.

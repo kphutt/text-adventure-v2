@@ -1,5 +1,7 @@
 # Combat System Brainstorm: Silksong-Inspired Platformer Mode
 
+**Author**: Karsten Huttelmaier — co-authored with Claude
+
 ## The Vision
 
 When the player encounters an enemy in the dungeon, the entire screen transforms into a **full-screen, real-time side-scrolling platformer** — inspired by Hollow Knight / Silksong. The dungeon exploration stays small and understated (unchanged), making the mode switch a jaw-dropping contrast.
