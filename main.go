@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"text-adventure-v2/game"
 	"text-adventure-v2/renderer"
 )
@@ -40,7 +40,10 @@ type model struct {
 func initialModel() model {
 	ti := textinput.New()
 	ti.Prompt = "> "
-	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("14")) // cyan prompt
+	styles := textinput.DefaultDarkStyles()
+	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("14")) // cyan prompt
+	styles.Blurred.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))
+	ti.SetStyles(styles)
 	ti.Focus()
 
 	g := game.NewGame()
@@ -85,7 +88,7 @@ func logStartupState(g *game.Game) {
 }
 
 func (m model) Init() tea.Cmd {
-	return textinput.Blink
+	return nil
 }
 
 func (m *model) handleCommand(command string) {
@@ -119,16 +122,16 @@ func (m *model) handleCommand(command string) {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.won {
 			return m, tea.Quit
 		}
 
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+		switch msg.String() {
+		case "ctrl+c", "esc":
 			return m, tea.Quit
 
-		case tea.KeyEnter:
+		case "enter":
 			command := m.textInput.Value()
 			if command != "" {
 				m.handleCommand(command)
@@ -164,45 +167,50 @@ func (m model) highlightItems(s string) string {
 	return s
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
+	var content string
 	if m.won {
 		lastMsg := ""
 		if len(m.messages) > 0 {
 			lastMsg = m.messages[len(m.messages)-1]
 		}
-		return winStyle.Render(fmt.Sprintf(
+		content = winStyle.Render(fmt.Sprintf(
 			"%s\n\nTotal Turns: %d\nFinal Score: %d\n\nPress any key to exit.",
 			lastMsg, m.game.Turns, m.game.Score(),
 		))
+	} else {
+		mapView := renderer.MapView{
+			AllRooms:            m.game.AllRooms,
+			PlayerLocation:      m.game.Player.Location,
+			CurrentLocationName: m.game.Player.Location.Name,
+			TurnsTaken:          m.game.Turns,
+			Score:               m.game.Score(),
+			VisitedRooms:        m.game.VisitedRooms,
+		}
+
+		hudStr := hudStyle.Render(renderer.RenderHUD(mapView))
+		mapStr := mapStyle.Render(renderer.RenderMap(mapView))
+		lookStr := lookStyle.Render(m.highlightItems(m.game.Look()))
+		// Show last N messages as a scrolling log
+		start := 0
+		if len(m.messages) > maxLogLines {
+			start = len(m.messages) - maxLogLines
+		}
+		logLines := make([]string, 0, maxLogLines)
+		for _, line := range m.messages[start:] {
+			logLines = append(logLines, m.highlightItems(line))
+		}
+		msgStr := msgStyle.Render(strings.Join(logLines, "\n"))
+		inputStr := m.textInput.View()
+
+		helpStr := helpStyle.Render(helpText)
+
+		content = lipgloss.JoinVertical(lipgloss.Left, hudStr, helpStr, mapStr, lookStr, msgStr, inputStr)
 	}
 
-	mapView := renderer.MapView{
-		AllRooms:            m.game.AllRooms,
-		PlayerLocation:      m.game.Player.Location,
-		CurrentLocationName: m.game.Player.Location.Name,
-		TurnsTaken:          m.game.Turns,
-		Score:               m.game.Score(),
-		VisitedRooms:        m.game.VisitedRooms,
-	}
-
-	hudStr := hudStyle.Render(renderer.RenderHUD(mapView))
-	mapStr := mapStyle.Render(renderer.RenderMap(mapView))
-	lookStr := lookStyle.Render(m.highlightItems(m.game.Look()))
-	// Show last N messages as a scrolling log
-	start := 0
-	if len(m.messages) > maxLogLines {
-		start = len(m.messages) - maxLogLines
-	}
-	logLines := make([]string, 0, maxLogLines)
-	for _, msg := range m.messages[start:] {
-		logLines = append(logLines, m.highlightItems(msg))
-	}
-	msgStr := msgStyle.Render(strings.Join(logLines, "\n"))
-	inputStr := m.textInput.View()
-
-	helpStr := helpStyle.Render(helpText)
-
-	return lipgloss.JoinVertical(lipgloss.Left, hudStr, helpStr, mapStr, lookStr, msgStr, inputStr)
+	v := tea.NewView(content)
+	v.AltScreen = true
+	return v
 }
 
 func main() {
@@ -217,7 +225,7 @@ func main() {
 		}
 		defer f.Close()
 	}
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
