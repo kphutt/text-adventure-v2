@@ -2,3 +2,4 @@ text-adventure
 *.exe
 debug.log
 coverage.out
+.claude/
