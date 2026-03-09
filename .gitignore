@@ -1,5 +1,19 @@
+# Build output
 text-adventure
 *.exe
-debug.log
 coverage.out
+
+# Environment & secrets
+.env
+*.pem
+*.key
+
+# Logs
+debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code
 .claude/
