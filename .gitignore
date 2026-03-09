@@ -1,19 +1,19 @@
-# Build output
-text-adventure
-*.exe
-coverage.out
-
-# Environment & secrets
-.env
-*.pem
-*.key
-
-# Logs
-debug.log
-
 # OS files
 .DS_Store
 Thumbs.db
 
 # Claude Code
 .claude/
+
+# Logs
+debug.log
+
+# Environment & secrets
+.env
+*.pem
+*.key
+
+# Build output
+text-adventure
+*.exe
+coverage.out
