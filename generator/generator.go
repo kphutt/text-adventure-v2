@@ -71,6 +71,12 @@ func Generate(config Config) (*world.Room, error) {
 			continue // Should be rare, but retry if validation fails
 		}
 
+		// Step 4: Validate geometry (exit directions match room coordinates).
+		err = validateGeometry(allRooms)
+		if err != nil {
+			continue // Should be rare; indicates a builder regression
+		}
+
 		// If we get here, the world is valid.
 		return startRoom, nil
 	}

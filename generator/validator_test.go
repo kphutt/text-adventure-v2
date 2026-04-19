@@ -176,6 +176,127 @@ func TestValidatorBfs_SameRoom(t *testing.T) {
 	}
 }
 
+// --- validateGeometry tests ---
+
+func TestValidateGeometry_ValidDirections(t *testing.T) {
+	cases := []struct {
+		name   string
+		dir    string
+		dx, dy int
+		back   string
+	}{
+		{"east", "east", 1, 0, "west"},
+		{"west", "west", -1, 0, "east"},
+		{"south", "south", 0, 1, "north"},
+		{"north", "north", 0, -1, "south"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+			b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit), X: c.dx, Y: c.dy}
+			a.Exits[c.dir] = &world.Exit{Room: b}
+			b.Exits[c.back] = &world.Exit{Room: a}
+
+			allRooms := map[string]*world.Room{"A": a, "B": b}
+
+			if err := validateGeometry(allRooms); err != nil {
+				t.Errorf("Expected valid %s exit, got error: %v", c.dir, err)
+			}
+		})
+	}
+}
+
+func TestValidateGeometry_WrongCoordsPerDirection(t *testing.T) {
+	cases := []struct {
+		name   string
+		dir    string
+		bx, by int // incorrect coords for B
+	}{
+		{"east points two steps away", "east", 2, 0},
+		{"west points two steps away", "west", -2, 0},
+		{"south points two steps away", "south", 0, 2},
+		{"north points two steps away", "north", 0, -2},
+		{"east has drifted on Y axis", "east", 1, 1},
+		{"south has drifted on X axis", "south", 1, 1},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+			b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit), X: c.bx, Y: c.by}
+			a.Exits[c.dir] = &world.Exit{Room: b}
+
+			allRooms := map[string]*world.Room{"A": a, "B": b}
+
+			if err := validateGeometry(allRooms); err == nil {
+				t.Fatalf("Expected error for %s exit pointing to (%d,%d), got nil", c.dir, c.bx, c.by)
+			}
+		})
+	}
+}
+
+func TestValidateGeometry_UnknownDirection(t *testing.T) {
+	a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+	b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+	a.Exits["up"] = &world.Exit{Room: b}
+
+	allRooms := map[string]*world.Room{"A": a, "B": b}
+
+	if err := validateGeometry(allRooms); err == nil {
+		t.Fatal("Expected error for unknown direction, got nil")
+	}
+}
+
+func TestValidateGeometry_MultiRoomChain(t *testing.T) {
+	// 4 rooms in a line: A(0,0) <-> B(1,0) <-> C(2,0) <-> D(3,0)
+	a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+	b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit), X: 1, Y: 0}
+	c := &world.Room{Name: "C", Exits: make(map[string]*world.Exit), X: 2, Y: 0}
+	d := &world.Room{Name: "D", Exits: make(map[string]*world.Exit), X: 3, Y: 0}
+
+	a.Exits["east"] = &world.Exit{Room: b}
+	b.Exits["west"] = &world.Exit{Room: a}
+	b.Exits["east"] = &world.Exit{Room: c}
+	c.Exits["west"] = &world.Exit{Room: b}
+	c.Exits["east"] = &world.Exit{Room: d}
+	d.Exits["west"] = &world.Exit{Room: c}
+
+	allRooms := map[string]*world.Room{"A": a, "B": b, "C": c, "D": d}
+
+	if err := validateGeometry(allRooms); err != nil {
+		t.Errorf("Expected valid multi-room chain, got error: %v", err)
+	}
+}
+
+func TestValidateGeometry_SameCoordinates(t *testing.T) {
+	// Two rooms at (0,0) with an east exit between them — impossible geometry.
+	a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+	b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+	a.Exits["east"] = &world.Exit{Room: b}
+
+	allRooms := map[string]*world.Room{"A": a, "B": b}
+
+	if err := validateGeometry(allRooms); err == nil {
+		t.Fatal("Expected error for two rooms at same coordinates with a directional exit, got nil")
+	}
+}
+
+func TestValidateGeometry_PartiallyInvalid(t *testing.T) {
+	// 3 rooms, first two correctly wired, third at bad coords.
+	a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit), X: 0, Y: 0}
+	b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit), X: 1, Y: 0}
+	bad := &world.Room{Name: "Bad", Exits: make(map[string]*world.Exit), X: 5, Y: 5}
+
+	a.Exits["east"] = &world.Exit{Room: b}
+	b.Exits["west"] = &world.Exit{Room: a}
+	b.Exits["east"] = &world.Exit{Room: bad} // expected (2,0), got (5,5)
+
+	allRooms := map[string]*world.Room{"A": a, "B": b, "Bad": bad}
+
+	if err := validateGeometry(allRooms); err == nil {
+		t.Fatal("Expected error when one of three rooms has bad coordinates, got nil")
+	}
+}
+
 func TestValidatorBfs_MultiHopPath(t *testing.T) {
 	a := &world.Room{Name: "A", Exits: make(map[string]*world.Exit)}
 	b := &world.Room{Name: "B", Exits: make(map[string]*world.Exit)}

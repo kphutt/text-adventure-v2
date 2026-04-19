@@ -2,6 +2,7 @@ package generator
 
 import (
 	"errors"
+	"fmt"
 	"text-adventure-v2/world"
 )
 
@@ -45,6 +46,35 @@ func validateWorld(startRoom *world.Room, allRooms map[string]*world.Room) error
 		return errors.New("validator: a path to treasure exists without needing the key")
 	}
 
+	return nil
+}
+
+// validateGeometry checks that each exit's target room coordinates match the direction label:
+// "east" must point to (X+1, Y), "south" to (X, Y+1), and so on. The renderer draws corridors
+// from these coordinates; a mismatch renders as a room with no visible connection. The builder
+// upholds this by construction — this guard catches regressions.
+func validateGeometry(allRooms map[string]*world.Room) error {
+	for _, room := range allRooms {
+		for dir, exit := range room.Exits {
+			var dx, dy int
+			switch dir {
+			case "north":
+				dx, dy = 0, -1
+			case "south":
+				dx, dy = 0, 1
+			case "east":
+				dx, dy = 1, 0
+			case "west":
+				dx, dy = -1, 0
+			default:
+				return fmt.Errorf("validator: room %q has unknown exit direction %q", room.Name, dir)
+			}
+			if exit.Room.X != room.X+dx || exit.Room.Y != room.Y+dy {
+				return fmt.Errorf("validator: room %q %s exit points to %q at (%d,%d), expected (%d,%d)",
+					room.Name, dir, exit.Room.Name, exit.Room.X, exit.Room.Y, room.X+dx, room.Y+dy)
+			}
+		}
+	}
 	return nil
 }
 
