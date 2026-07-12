@@ -1,4 +1,4 @@
-# CLAUDE.md
+# text-adventure-v2 — contributor & AI-agent guide
 
 ## Project
 Terminal-based text adventure game in Go with procedurally generated worlds.
