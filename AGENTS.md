@@ -1,5 +1,7 @@
 # text-adventure-v2 — contributor & AI-agent guide
 
+> Cross-repo conventions (fleet-wide) live in `~/dev/AGENTS.md` — the sole authority for anything fleet-wide. This file holds only text-adventure-v2-specific guidance.
+
 ## Project
 Terminal-based text adventure game in Go with procedurally generated worlds.
 
