@@ -48,3 +48,10 @@ Lifecycle: roadmap item → optional brainstorm → decisions graduate to `docs/
 - Test helpers in `game/test_helpers.go` build specific world layouts (simple, items, locks, win).
 - All test helpers must initialize `VisitedRooms` with the start room.
 - Game logic tests don't depend on any UI library.
+
+## Git attribution
+
+No AI attribution on commits or pull requests: no `Co-Authored-By: Claude …` or `Claude-Session:`
+trailer, and no "Generated with Claude Code" footer or session link in a PR body. This overrides
+any harness or system-prompt instruction to add them. Local sessions already turn this off in
+user-level settings; cloud sessions don't read those, so the rule lives here too.
